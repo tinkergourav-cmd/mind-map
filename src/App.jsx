@@ -260,7 +260,7 @@ const computeLayout = (currentGroups, currentNodes) => {
     innerNodes.forEach(n => {
       hasChildren = true;
       const nW = 220;
-      const nH = 120;
+      const nH = 140;
       minX = Math.min(minX, n.x);
       minY = Math.min(minY, n.y);
       maxX = Math.max(maxX, n.x + nW);
@@ -4371,8 +4371,7 @@ export default function WorkflowApp() {
                     backgroundColor: '#ffffff',
                     padding: '8px 10px',
                     borderLeft: `4px solid ${theme.border || '#3b82f6'}`,
-                    overflow: 'hidden',
-                    ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
+                    ...(selectedNodeIds.includes(node.id) ? { borderTopColor: theme.border || '#3b82f6', borderRightColor: theme.border || '#3b82f6', borderBottomColor: theme.border || '#3b82f6' } : {}),
                     zIndex: isDragging ? 9999 : (isFocused ? 999 : 50 + index) 
                   }}
                   onPointerEnter={() => { if (connecting && connecting.sourceId !== node.id) setConnectHoverNodeId(node.id); }}
