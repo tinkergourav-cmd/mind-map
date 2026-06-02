@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Redesign mind-map cards to be more compact and visually look like proper cards with shadows, rounded corners, clear boundaries, and visual hierarchy",
+  "status": "in_progress",
+  "steps": [
+    "In /projects/sandbox/mind-map/src/App.jsx, update the getNodeDimensions function (line ~468) to produce smaller card widths. Change the formula: reduce base from 180 to 160, reduce max from 380 to 280, reduce multiplier from 1.2 to 0.8. This makes cards narrower and more compact.",
+    "In /projects/sandbox/mind-map/src/App.jsx, update the layout engine constants (line ~262): change nW from 280 to 220 and nH from 180 to 120 to reflect the new smaller card footprint in group auto-sizing.",
+    "In /projects/sandbox/mind-map/src/App.jsx, update the card rendering div (starting at line ~4358). Replace the current styling with a proper card design: (1) Use rounded-xl instead of rounded-lg for softer corners, (2) Add shadow-md as default shadow (shadow-xl when dragging), (3) Add a distinct top border-left colored accent bar using border-l-4 with the theme border color, (4) Use white/light background instead of the full theme cardBg for the card body (keep the accent from theme color on the left border), (5) Reduce padding from 12px to 8px horizontal and 8px vertical, (6) Add overflow-hidden to keep content contained.",
+    "Update the title input styling in the card to use text-xs font-semibold instead of text-sm font-bold, and reduce padding (px-0.5 instead of px-1).",
+    "Update the content area: reduce min-h from 3rem to 1.5rem, use text-[11px] instead of text-xs, and reduce mt from mt-2 to mt-1 for tighter spacing.",
+    "Update the hover toolbar positioning from -top-8 to -top-7 and make buttons slightly smaller.",
+    "Update the connection port circles to be positioned at top-1/2 correctly for the new smaller card height.",
+    "In /projects/sandbox/mind-map/src/MiniMap.jsx, update NODE_EXPANDED_WIDTH from 240 to 200 and NODE_EXPANDED_HEIGHT from 120 to 90 to match the new compact card dimensions."
+  ],
+  "acceptance_criteria": [
+    "Cards are visually narrower (max width 280px instead of 380px)",
+    "Cards have a proper card appearance: white/light background, left color accent, shadow-md, rounded-xl corners",
+    "Cards have less internal padding and spacing between title and content",
+    "The project builds without errors (npm run build passes)",
+    "MiniMap node dimensions are updated to reflect new card sizes"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/mind-map && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

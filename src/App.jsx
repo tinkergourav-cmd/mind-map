@@ -259,8 +259,8 @@ const computeLayout = (currentGroups, currentNodes) => {
 
     innerNodes.forEach(n => {
       hasChildren = true;
-      const nW = 280;
-      const nH = 180;
+      const nW = 220;
+      const nH = 120;
       minX = Math.min(minX, n.x);
       minY = Math.min(minY, n.y);
       maxX = Math.max(maxX, n.x + nW);
@@ -471,12 +471,12 @@ export default function WorkflowApp() {
     const contentLen = content.length;
     const newlineCount = (content.match(/\n/g) || []).length;
     const totalLen = titleLen + contentLen;
-    let width = 180 + Math.min(200, totalLen * 1.2);
+    let width = 160 + Math.min(120, totalLen * 0.8);
     // Multi-line content needs more width to display properly
     if (newlineCount > 0) {
-      width = Math.max(width, 220 + newlineCount * 20);
+      width = Math.max(width, 200 + newlineCount * 15);
     }
-    width = Math.max(180, Math.min(380, width));
+    width = Math.max(160, Math.min(280, width));
     return { width };
   }, []);
 
@@ -4357,19 +4357,21 @@ export default function WorkflowApp() {
               return (
                 <div
                   key={node.id}
-                  className={`absolute rounded-lg border shadow-sm pointer-events-auto group flex flex-col ${
-                    isDragging ? 'shadow-lg scale-[1.02] z-[9999]' : 'transition-all duration-150'
+                  className={`absolute rounded-xl border border-slate-200/60 shadow-md pointer-events-auto group flex flex-col ${
+                    isDragging ? 'shadow-xl scale-[1.02] z-[9999]' : 'transition-all duration-150'
                   } ${
                     isFocused ? 'ring-4 ring-indigo-500 animate-[pulse_1.5s_infinite]' : ''
-                  } ${selectedNodeIds.includes(node.id) ? 'ring-2 ring-offset-1' : 'border-slate-200 hover:border-slate-300'} ${
+                  } ${selectedNodeIds.includes(node.id) ? 'ring-2 ring-offset-1' : 'hover:border-slate-300'} ${
                     connectHoverNodeId === node.id ? 'ring-2 ring-green-400 shadow-lg shadow-green-200/50' : ''
                   }`}
                   style={{ 
                     left: displayX, 
                     top: displayY, 
                     width: nodeDims.width,
-                    backgroundColor: theme.cardBg || '#bfdbfe',
-                    padding: 12,
+                    backgroundColor: '#ffffff',
+                    padding: '8px 10px',
+                    borderLeft: `4px solid ${theme.border || '#3b82f6'}`,
+                    overflow: 'hidden',
                     ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
                     zIndex: isDragging ? 9999 : (isFocused ? 999 : 50 + index) 
                   }}
@@ -4444,7 +4446,7 @@ export default function WorkflowApp() {
                 >
                   {/* Title */}
                   <input 
-                    className="bg-transparent font-bold focus:outline-none focus:bg-slate-50 rounded px-1 w-full text-sm text-slate-800 placeholder-slate-400 cursor-grab active:cursor-grabbing" 
+                    className="bg-transparent font-semibold focus:outline-none focus:bg-slate-50 rounded px-1 py-0 w-full text-xs text-slate-800 placeholder-slate-400 cursor-grab active:cursor-grabbing" 
                     value={node.title || ''} 
                     placeholder="Enter Title..." 
                     onFocus={() => takeSnapshot()} 
@@ -4453,12 +4455,12 @@ export default function WorkflowApp() {
                   />
 
                   {/* Content */}
-                  <div className="mt-2 flex-1 min-h-[3rem]" onPointerDown={(e) => e.stopPropagation()}>
+                  <div className="mt-1 flex-1 min-h-[1.5rem]" onPointerDown={(e) => e.stopPropagation()}>
                     {editingTextNode === node.id ? (
                       <textarea 
                         autoFocus
                         onBlur={() => setEditingTextNode(null)}
-                        className="w-full h-full min-h-[3rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 custom-scrollbar" 
+                        className="w-full h-full min-h-[1.5rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 custom-scrollbar" 
                         value={node.content || ''} 
                         onChange={(e) => updateNode(node.id, { content: e.target.value })} 
                         placeholder="Write notes or details..." 
@@ -4466,7 +4468,7 @@ export default function WorkflowApp() {
                     ) : (
                       <div 
                         onClick={() => { takeSnapshot(); setEditingTextNode(node.id); }}
-                        className="w-full h-full min-h-[3rem] bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar cursor-text whitespace-pre-wrap"
+                        className="w-full h-full min-h-[1.5rem] bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar cursor-text whitespace-pre-wrap"
                         title="Click to edit content"
                       >
                         {node.content ? renderLinks(node.content) : <span className="text-slate-400 italic">Write notes or details...</span>}
@@ -4505,7 +4507,7 @@ export default function WorkflowApp() {
                   })()}
 
                   {/* Hover toolbar */}
-                  <div className="absolute -top-8 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-md shadow border border-slate-200 px-1 py-0.5" onPointerDown={(e) => e.stopPropagation()}>
+                  <div className="absolute -top-7 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-md shadow border border-slate-200 px-1 py-0.5" onPointerDown={(e) => e.stopPropagation()}>
                     <button 
                       onClick={(e) => { e.stopPropagation(); setOpenLinkPicker(openLinkPicker === node.id ? null : node.id); setOpenColorPicker(null); }}
                       className={`p-1 hover:bg-slate-100 rounded text-slate-500 ${node.linkToTab ? 'text-indigo-600' : ''}`}

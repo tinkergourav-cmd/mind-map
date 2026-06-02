@@ -24,8 +24,8 @@ const PADDING = 40;
 const ARROW_STEP = 50;
 
 // Node dimensions used in the minimap rendering
-const NODE_EXPANDED_WIDTH = 240;
-const NODE_EXPANDED_HEIGHT = 120;
+const NODE_EXPANDED_WIDTH = 200;
+const NODE_EXPANDED_HEIGHT = 90;
 
 export default function MiniMap({
   nodes,
