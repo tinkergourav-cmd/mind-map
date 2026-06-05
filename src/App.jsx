@@ -498,6 +498,7 @@ export default function WorkflowApp() {
 
   const handleWheel = useCallback((e) => {
     e.preventDefault();
+    setEditingPinOnCanvas(null);
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setTransform(prev => {
       const newScale = Math.max(0.2, Math.min(3, prev.scale + delta));
@@ -1338,7 +1339,7 @@ export default function WorkflowApp() {
         const rect = workspaceRef.current.getBoundingClientRect();
         const canvasX = (rect.width / 2 - transform.x) / transform.scale;
         const canvasY = (rect.height / 2 - transform.y) / transform.scale;
-        addPin(canvasX, canvasY);
+        addPinRef.current(canvasX, canvasY);
         return;
       }
       if ((e.key === 'p' || e.key === 'P') && !e.shiftKey) {
@@ -2328,6 +2329,7 @@ export default function WorkflowApp() {
     setCloneToTabMenu(null);
     setFocusedNodeId(null);
     setFocusedGroupId(null);
+    setEditingPinOnCanvas(null);
 
     const isClickBg = e.target === workspaceRef.current || e.target.classList.contains('canvas-grid-clickable');
     if (isClickBg) {
@@ -2886,24 +2888,24 @@ export default function WorkflowApp() {
     showToast(`Pin dropped: ${newPin.name}`);
   };
 
-  const updatePin = (pinId, updates) => {
-    updateActiveWorkspace(ws => ({
-      pins: (ws.pins || []).map(p => p.id === pinId ? { ...p, ...updates } : p),
-    }));
+  const addPinRef = useRef(addPin);
+  useEffect(() => { addPinRef.current = addPin; });
+
+  const updatePin = (pinId, updates, workspaceId) => {
+    const targetId = workspaceId || activeTab;
+    setWorkspaces(prev => prev.map(ws => ws.id === targetId ? { ...ws, pins: (ws.pins || []).map(p => p.id === pinId ? { ...p, ...updates } : p) } : ws));
   };
 
-  const deletePin = (pinId) => {
-    updateActiveWorkspace(ws => ({
-      pins: (ws.pins || []).filter(p => p.id !== pinId),
-    }));
+  const deletePin = (pinId, workspaceId) => {
+    const targetId = workspaceId || activeTab;
+    setWorkspaces(prev => prev.map(ws => ws.id === targetId ? { ...ws, pins: (ws.pins || []).filter(p => p.id !== pinId) } : ws));
     if (editingPinOnCanvas === pinId) setEditingPinOnCanvas(null);
     if (focusedPinId === pinId) setFocusedPinId(null);
   };
 
-  const togglePinVisibility = (pinId) => {
-    updateActiveWorkspace(ws => ({
-      pins: (ws.pins || []).map(p => p.id === pinId ? { ...p, visibility_status: !p.visibility_status } : p),
-    }));
+  const togglePinVisibility = (pinId, workspaceId) => {
+    const targetId = workspaceId || activeTab;
+    setWorkspaces(prev => prev.map(ws => ws.id === targetId ? { ...ws, pins: (ws.pins || []).map(p => p.id === pinId ? { ...p, visibility_status: !p.visibility_status } : p) } : ws));
   };
 
   const toggleAllPinsVisibility = (visible) => {

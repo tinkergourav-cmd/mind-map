@@ -56,13 +56,13 @@ export default function PinPanel({
     setEditingIcon(pin.icon);
   };
 
-  const commitEdit = (pinId) => {
+  const commitEdit = (pinId, workspaceId) => {
     onUpdatePin(pinId, {
       name: editingName.trim() || 'Unnamed Pin',
       note: editingNote,
       color: editingColor,
       icon: editingIcon,
-    });
+    }, workspaceId);
     setEditingPinId(null);
   };
 
@@ -170,7 +170,7 @@ export default function PinPanel({
                         className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-rose-300"
                         placeholder="Pin name"
                         autoFocus
-                        onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(pin.id); if (e.key === 'Escape') cancelEdit(); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(pin.id, ws.id); if (e.key === 'Escape') cancelEdit(); }}
                       />
                       <textarea
                         value={editingNote}
@@ -207,7 +207,7 @@ export default function PinPanel({
                         ))}
                       </div>
                       <div className="flex gap-1.5">
-                        <button onClick={() => commitEdit(pin.id)} className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-semibold rounded transition-colors">Save</button>
+                        <button onClick={() => commitEdit(pin.id, ws.id)} className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-semibold rounded transition-colors">Save</button>
                         <button onClick={cancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors">Cancel</button>
                       </div>
                     </div>
@@ -241,7 +241,7 @@ export default function PinPanel({
                       {/* Actions */}
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                         <button
-                          onClick={(e) => { e.stopPropagation(); onToggleVisibility(pin.id); }}
+                          onClick={(e) => { e.stopPropagation(); onToggleVisibility(pin.id, ws.id); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
                           title={pin.visibility_status ? 'Hide' : 'Show'}
                         >
@@ -255,7 +255,7 @@ export default function PinPanel({
                           <Pencil className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); onDeletePin(pin.id); }}
+                          onClick={(e) => { e.stopPropagation(); onDeletePin(pin.id, ws.id); }}
                           className="p-0.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
                           title="Delete"
                         >
