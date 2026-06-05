@@ -436,6 +436,19 @@ export default function WorkflowApp() {
   const [timerDone, setTimerDone] = useState(false);
   const [timerCustomMinutes, setTimerCustomMinutes] = useState('');
   const timerIntervalRef = useRef(null);
+  const [timerShortcuts, setTimerShortcuts] = useState({
+    toggleTimer: 'Alt+T',
+    startPreset5: 'Alt+1',
+    startPreset10: 'Alt+2',
+    startPreset15: 'Alt+3',
+    startPreset20: 'Alt+4',
+    startPreset30: 'Alt+5',
+    pauseResume: 'Alt+P',
+    reset: 'Alt+R'
+  });
+  const [editingShortcut, setEditingShortcut] = useState(null);
+  const [showShortcutsSection, setShowShortcutsSection] = useState(false);
+  const alarmAudioRef = useRef(null);
 
   // --- Multi-Selection States ---
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
@@ -696,6 +709,9 @@ export default function WorkflowApp() {
             // Load reminder data
             const loadedReminders = activeProj.reminders || DEFAULT_REMINDERS;
             setReminders(loadedReminders);
+
+            // Load timer shortcuts
+            if (activeProj.timerShortcuts) setTimerShortcuts(activeProj.timerShortcuts);
             
             // Show workspace-open reminder after a short delay
             setTimeout(() => {
@@ -815,19 +831,24 @@ export default function WorkflowApp() {
             clearInterval(timerIntervalRef.current);
             setTimerRunning(false);
             setTimerDone(true);
-            // Play a short beep using Web Audio API
+            // Play looping alarm beep using Web Audio API
             try {
               const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-              const oscillator = audioCtx.createOscillator();
-              const gainNode = audioCtx.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioCtx.destination);
-              oscillator.frequency.value = 800;
-              oscillator.type = 'sine';
-              gainNode.gain.value = 0.3;
-              oscillator.start();
-              oscillator.stop(audioCtx.currentTime + 0.3);
-              setTimeout(() => audioCtx.close(), 500);
+              const playBeep = () => {
+                if (audioCtx.state === 'closed') return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+              };
+              playBeep();
+              const beepInterval = setInterval(playBeep, 1500);
+              alarmAudioRef.current = { audioCtx, beepInterval };
             } catch (e) { /* Audio not available */ }
             return 0;
           }
@@ -851,7 +872,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, timerShortcuts, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -863,7 +884,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, timerShortcuts, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1507,14 +1528,46 @@ export default function WorkflowApp() {
 
   useEffect(() => {
     reminderNotificationRef.current = activeReminderNotification;
-    if (activeReminderNotification) {
-      if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current);
-      reminderNotificationTimerRef.current = setTimeout(() => {
-        dismissReminderNotification();
-      }, 8000);
-    }
-    return () => { if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current); };
   }, [activeReminderNotification, dismissReminderNotification]);
+
+  // --- Timer Keyboard Shortcuts ---
+  useEffect(() => {
+    const handleTimerShortcut = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (editingShortcut) return;
+
+      const pressed = [];
+      if (e.ctrlKey) pressed.push('Ctrl');
+      if (e.altKey) pressed.push('Alt');
+      if (e.shiftKey) pressed.push('Shift');
+      if (e.metaKey) pressed.push('Meta');
+      const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+      if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) pressed.push(key);
+      const combo = pressed.join('+');
+
+      for (const [action, shortcut] of Object.entries(timerShortcuts)) {
+        if (combo === shortcut) {
+          e.preventDefault();
+          switch (action) {
+            case 'toggleTimer': setShowTimer(prev => !prev); break;
+            case 'startPreset5': startTimer(5); setShowTimer(true); break;
+            case 'startPreset10': startTimer(10); setShowTimer(true); break;
+            case 'startPreset15': startTimer(15); setShowTimer(true); break;
+            case 'startPreset20': startTimer(20); setShowTimer(true); break;
+            case 'startPreset30': startTimer(30); setShowTimer(true); break;
+            case 'pauseResume':
+              if (timerRunning && !timerPaused) pauseTimer();
+              else if (timerRunning && timerPaused) resumeTimer();
+              break;
+            case 'reset': resetTimer(); break;
+          }
+          break;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleTimerShortcut);
+    return () => window.removeEventListener('keydown', handleTimerShortcut);
+  }, [timerShortcuts, timerRunning, timerPaused, editingShortcut]);
 
   // --- S key toggles sidebar ---
   useEffect(() => {
@@ -3358,6 +3411,24 @@ export default function WorkflowApp() {
     setTimerPaused(false);
     setTimerSeconds(0);
     setTimerDone(false);
+    // Stop alarm audio if playing
+    if (alarmAudioRef.current) {
+      try {
+        clearInterval(alarmAudioRef.current.beepInterval);
+        alarmAudioRef.current.audioCtx.close();
+      } catch (e) { /* ignore */ }
+      alarmAudioRef.current = null;
+    }
+  };
+  const dismissAlarm = () => {
+    setTimerDone(false);
+    if (alarmAudioRef.current) {
+      try {
+        clearInterval(alarmAudioRef.current.beepInterval);
+        alarmAudioRef.current.audioCtx.close();
+      } catch (e) { /* ignore */ }
+      alarmAudioRef.current = null;
+    }
   };
   const formatTimerDisplay = (secs) => {
     const m = Math.floor(secs / 60);
@@ -4984,7 +5055,7 @@ export default function WorkflowApp() {
             {/* Timer Widget */}
             <div className="flex flex-col items-stretch">
               {showTimer && (
-                <div className={`mb-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 p-3 min-w-[200px] ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}>
+                <div className="mb-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 p-3 min-w-[200px]">
                   {/* Timer Display */}
                   <div className="text-center mb-2">
                     <span className={`text-2xl font-bold font-mono ${timerDone ? 'text-orange-600' : timerRunning ? 'text-indigo-700' : 'text-slate-700'}`}>
@@ -5035,16 +5106,44 @@ export default function WorkflowApp() {
 
                   {timerDone && (
                     <div className="flex justify-center">
-                      <button onClick={resetTimer} className="px-3 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors">Dismiss</button>
+                      <button onClick={dismissAlarm} className="px-3 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors">Dismiss</button>
                     </div>
                   )}
+
+                  {/* Shortcuts Section */}
+                  <div className="mt-3 border-t border-slate-100 pt-2">
+                    <button onClick={() => setShowShortcutsSection(prev => !prev)} className="w-full text-left text-[10px] font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                      <ChevronDown className={`w-3 h-3 transition-transform ${showShortcutsSection ? '' : '-rotate-90'}`} />
+                      Shortcuts
+                    </button>
+                    {showShortcutsSection && (
+                      <div className="mt-1 space-y-1">
+                        {Object.entries(timerShortcuts).map(([action, key]) => (
+                          <div key={action} className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-600 capitalize">{action.replace(/([A-Z])/g, ' $1').replace(/(\d+)/g, ' $1').trim()}</span>
+                            {editingShortcut === action ? (
+                              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-mono animate-pulse">Press keys...</span>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[9px] font-mono">{key}</span>
+                                <button
+                                  onClick={() => setEditingShortcut(action)}
+                                  className="px-1 py-0.5 text-[9px] text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded"
+                                >Edit</button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               <button
-                onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
-                className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}
-                title="Timer"
+                onClick={() => { setShowTimer(prev => !prev); if (timerDone) dismissAlarm(); }}
+                className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                title="Timer (Alt+T)"
               >
                 <Timer className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -5727,23 +5826,26 @@ export default function WorkflowApp() {
         </div>
       )}
 
-      {/* --- Reminder Notification Toast --- */}
+      {/* --- Reminder Notification Modal --- */}
       {activeReminderNotification && (
-        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[85] animate-in slide-in-from-bottom fade-in duration-300 max-w-sm w-full mx-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200 px-4 py-3 flex items-start gap-3">
-            <span className="text-2xl shrink-0">{activeReminderNotification.icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800">{activeReminderNotification.title}</p>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeReminderNotification.content}</p>
+        <>
+          <div className="fixed inset-0 z-[280] bg-slate-900/30 backdrop-blur-[2px]" onClick={dismissReminderNotification} />
+          <div className="fixed inset-0 z-[285] flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto max-w-sm w-full mx-4 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border-2 px-5 py-4 flex items-start gap-3" style={{ animation: 'reminder-glow 2s ease-in-out infinite' }}>
+              <span className="text-2xl shrink-0">{activeReminderNotification.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800">{activeReminderNotification.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeReminderNotification.content}</p>
+              </div>
+              <button
+                onClick={dismissReminderNotification}
+                className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={dismissReminderNotification}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
-        </div>
+        </>
       )}
 
       {/* --- Partial Import Placement Dialog --- */}
@@ -5801,6 +5903,62 @@ export default function WorkflowApp() {
             </div>
           </div>
         </>
+      )}
+
+      {/* --- Full-Screen Timer Alarm Overlay --- */}
+      {timerDone && (
+        <>
+          <div className="fixed inset-0 z-[300] bg-red-900/40" style={{ animation: 'alarm-backdrop 2s ease-in-out infinite' }} onClick={dismissAlarm} />
+          <div className="fixed inset-0 z-[301] flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto bg-white rounded-2xl shadow-2xl border-4 p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4" style={{ animation: 'alarm-bounce-in 0.4s ease-out forwards, alarm-pulse 1.5s ease-in-out infinite' }}>
+              <Timer className="w-12 h-12 text-orange-500" />
+              <h2 className="text-2xl font-bold text-slate-800">Time&apos;s Up!</h2>
+              <p className="text-sm text-slate-500 text-center">Your timer has finished.</p>
+              <button
+                onClick={dismissAlarm}
+                className="mt-2 px-6 py-2.5 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-lg"
+              >Dismiss</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* --- Persistent Countdown Badge --- */}
+      {timerRunning && timerSeconds > 0 && (
+        <div
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] cursor-pointer opacity-50 hover:opacity-90 transition-opacity"
+          onClick={() => setShowTimer(true)}
+          title="Click to open timer"
+        >
+          <div className="px-3 py-1.5 bg-slate-800/80 backdrop-blur-sm text-white text-sm font-mono font-semibold rounded-full shadow-lg">
+            {formatTimerDisplay(timerSeconds)}
+          </div>
+        </div>
+      )}
+
+      {/* --- Shortcut Edit Listener --- */}
+      {editingShortcut && (
+        <div
+          className="fixed inset-0 z-[400] bg-transparent"
+          onKeyDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const pressed = [];
+            if (e.ctrlKey) pressed.push('Ctrl');
+            if (e.altKey) pressed.push('Alt');
+            if (e.shiftKey) pressed.push('Shift');
+            if (e.metaKey) pressed.push('Meta');
+            const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+            if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) pressed.push(key);
+            if (pressed.length > 1 || (pressed.length === 1 && !['Control', 'Alt', 'Shift', 'Meta'].includes(pressed[0]))) {
+              const combo = pressed.join('+');
+              setTimerShortcuts(prev => ({ ...prev, [editingShortcut]: combo }));
+              setEditingShortcut(null);
+            }
+          }}
+          tabIndex={0}
+          ref={(el) => { if (el) el.focus(); }}
+        />
       )}
 
       <style dangerouslySetInnerHTML={{__html: `

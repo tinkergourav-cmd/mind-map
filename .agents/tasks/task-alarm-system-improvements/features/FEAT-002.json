@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Implement all three alarm system improvements: (1) Configurable keyboard shortcuts for alarms/timers, (2) Strong visual response when timer/alarm finishes that persists until acknowledged, (3) Persistent countdown display on the canvas that remains visible at 50% opacity when the timer panel is closed.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Step 1 - Add keyboard shortcut state to App.jsx: Add a new state variable `timerShortcuts` (object mapping actions like 'toggleTimer', 'startPreset5', 'startPreset10', 'pauseResume', 'reset' to key combos). Initialize with sensible defaults (e.g., Alt+T for toggle timer, Alt+1 through Alt+5 for presets). Store shortcuts in the project save data alongside other timer states.",
     "Step 2 - Register keyboard shortcut listener: Add a new useEffect in App.jsx that registers a keydown listener checking against configured shortcuts. When a shortcut matches, perform the corresponding action (toggle timer panel, start specific preset, pause/resume, reset). Follow the same pattern as existing keyboard handlers (check e.target.tagName for INPUT/TEXTAREA exclusion).",
