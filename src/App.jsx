@@ -4107,7 +4107,7 @@ export default function WorkflowApp() {
     <div className="flex flex-col h-screen w-full bg-[#f8fafc] font-sans text-slate-800 selection:bg-indigo-100 overflow-hidden">
       
       {/* --- Top Command Toolbar --- */}
-      <header className="h-10 bg-white border-b border-slate-200/80 flex items-center px-2 sm:px-3 z-50 justify-between shrink-0 gap-1 sm:gap-2 opacity-60 hover:opacity-100 transition-opacity duration-300">
+      <header className="h-10 bg-white/50 backdrop-blur-sm border-b border-slate-200/80 flex items-center px-2 sm:px-3 z-50 justify-between shrink-0 gap-1 sm:gap-2 hover:bg-white/90 transition-all duration-300">
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
           <button 
             onClick={() => setShowSidebar(!showSidebar)}
@@ -5065,8 +5065,8 @@ export default function WorkflowApp() {
               </div>
             )}
 
-            {/* Single horizontal button row */}
-            <div className="flex items-center bg-white rounded-lg shadow-lg border border-slate-200 p-1 gap-0.5">
+            {/* Single vertical button column */}
+            <div className="flex flex-col items-center bg-white rounded-lg shadow-lg border border-slate-200 p-1 gap-0.5">
               <button
                 onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
                 className={`p-1.5 sm:p-2 rounded-md transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}
@@ -5081,11 +5081,11 @@ export default function WorkflowApp() {
               >
                 <ListTodo className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
-              <div className="w-px h-5 bg-slate-200 mx-0.5" />
+              <div className="h-px w-5 bg-slate-200 my-0.5" />
               <button onClick={() => handleZoom(0.25)} className="p-1.5 sm:p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors" title="Zoom In"><ZoomIn className="w-4 h-4 sm:w-5 sm:h-5"/></button>
               <button onClick={() => setTransform({x:0, y:0, scale:1})} className="p-1.5 sm:p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors" title="Reset View"><Focus className="w-4 h-4 sm:w-5 sm:h-5"/></button>
               <button onClick={() => handleZoom(-0.25)} className="p-1.5 sm:p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors" title="Zoom Out"><ZoomOut className="w-4 h-4 sm:w-5 sm:h-5"/></button>
-              <div className="w-px h-5 bg-slate-200 mx-0.5" />
+              <div className="h-px w-5 bg-slate-200 my-0.5" />
               <button onClick={() => { setShowMiniMap(prev => !prev); setMiniMapOpenedViaShortcut(false); }} className={`p-1.5 sm:p-2 hover:bg-slate-100 rounded-md transition-colors ${showMiniMap ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'}`} title="Toggle Mini Map (M)"><Map className="w-4 h-4 sm:w-5 sm:h-5"/></button>
             </div>
           </div>
