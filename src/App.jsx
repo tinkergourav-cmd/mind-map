@@ -1434,7 +1434,7 @@ export default function WorkflowApp() {
   // --- F key toggles timer panel ---
   useEffect(() => {
     const handleTimerKey = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
@@ -5748,17 +5748,20 @@ export default function WorkflowApp() {
       {/* --- Timer Running Countdown (when panel closed) --- */}
       {timerRunning && !showTimer && (
         <div
-          className="fixed top-4 right-4 z-50 opacity-50 hover:opacity-90 transition-opacity cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2.5 py-1.5 flex items-center gap-1.5"
+          className={`fixed top-4 right-4 z-50 hover:opacity-90 transition-opacity cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2.5 py-1.5 flex items-center gap-1.5 ${timerPaused ? 'opacity-70' : 'opacity-50'}`}
           onClick={() => setShowTimer(true)}
           title="Click to open timer"
         >
-          <Timer className="w-3.5 h-3.5 text-indigo-600" />
-          <span className="text-sm font-mono font-semibold text-slate-700">
+          <Timer className={`w-3.5 h-3.5 ${timerPaused ? 'text-amber-500' : 'text-indigo-600'}`} />
+          <span className={`text-sm font-mono font-semibold ${timerPaused ? 'text-amber-600' : 'text-slate-700'}`}>
             {(() => {
               const minutes = Math.ceil(timerSeconds / 60);
               return `${minutes.toString().padStart(2, '0')}m`;
             })()}
           </span>
+          {timerPaused && (
+            <span className="text-xs text-amber-500 font-medium">(paused)</span>
+          )}
         </div>
       )}
 
