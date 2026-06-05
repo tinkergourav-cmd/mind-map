@@ -1,0 +1,10 @@
+{
+  "project_type": "React + Vite SPA with Tailwind CSS (mind-map/canvas application)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite 6 with @vitejs/plugin-react",
+  "test_framework": "None configured (no test runner in package.json)",
+  "build_command": "cd /projects/sandbox/mind-map && npm run build",
+  "test_command": "cd /projects/sandbox/mind-map && npm run build",
+  "verification_instructions": "Run `npm run build` in /projects/sandbox/mind-map to verify the project compiles without errors.",
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install"
+}
