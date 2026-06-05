@@ -7,11 +7,12 @@ import {
   Copy, ArrowUp, ArrowDown, RefreshCw, LayoutList, MonitorSpeaker,
   MoreVertical, ImageIcon, ChevronUp, Scissors, ClipboardPaste,
   Lock, Shield, Eye, EyeOff, GitBranch, Map, Timer,
-  CheckSquare, ListTodo, MapPin
+  CheckSquare, ListTodo, MapPin, Bell
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
 import PinPanel, { PIN_ICONS } from './PinPanel';
+import ReminderPanel from './ReminderPanel';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -318,6 +319,19 @@ const computeLayout = (currentGroups, currentNodes) => {
 };
 
 
+// --- Default Wellness Reminders ---
+const DEFAULT_REMINDERS = [
+  { id: 'r-1', title: 'Drink Water', content: 'Stay hydrated - drink a glass of water.', icon: '\u{1F4A7}', enabled: true, frequency: 60, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-2', title: 'Take a Deep Breath', content: 'Pause for a moment. Take a deep breath and relax.', icon: '\u{1F9D8}', enabled: true, frequency: 45, showOnWorkspaceOpen: true, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-3', title: 'Stand Up & Stretch', content: 'You have been sitting for a while. Stand up and stretch your body.', icon: '\u{1F6B6}', enabled: true, frequency: 90, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-4', title: 'Rest Your Eyes', content: 'Look away from the screen. Focus on something distant for 20 seconds.', icon: '\u{1F441}\uFE0F', enabled: true, frequency: 30, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-5', title: 'Take a Short Break', content: 'Step away for 5 minutes. Your mind needs rest to stay sharp.', icon: '\u2615', enabled: true, frequency: 120, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-6', title: 'Review Your Goals', content: 'What are you trying to achieve right now? Refocus on your priorities.', icon: '\u{1F3AF}', enabled: false, frequency: 240, showOnWorkspaceOpen: true, randomMode: false, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-7', title: 'Walk for a Few Minutes', content: 'A short walk helps clear your mind and boost creativity.', icon: '\u{1F45F}', enabled: true, frequency: 180, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() },
+  { id: 'r-8', title: 'Reset Your Mind', content: 'Feeling stuck? Take a moment to clear your thoughts before continuing.', icon: '\u{1F9E0}', enabled: true, frequency: 60, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() }
+];
+
+
 export default function WorkflowApp() {
   // --- Core State ---
   const [workspaces, setWorkspaces] = useState([]);
@@ -403,6 +417,16 @@ export default function WorkflowApp() {
   const [pinsVisible, setPinsVisible] = useState(true);
   const lastPKeyTimeRef = useRef(0);
   const pinDraggedRef = useRef(false);
+
+  // --- Reminder & Wellness System States ---
+  const [reminders, setReminders] = useState([]);
+  const [showReminderPanel, setShowReminderPanel] = useState(false);
+  const [reminderNotificationQueue, setReminderNotificationQueue] = useState([]);
+  const [sessionStartTime] = useState(Date.now());
+  const reminderCheckIntervalRef = useRef(null);
+  const reminderNotificationTimerRef = useRef(null);
+  const lastSessionNotifiedAtRef = useRef(Date.now());
+  const reminderNotificationRef = useRef(null);
 
   // --- Timer States ---
   const [showTimer, setShowTimer] = useState(false);
@@ -668,6 +692,19 @@ export default function WorkflowApp() {
             if (activeProj.tasks) setTasks(activeProj.tasks);
             if (activeProj.taskGroups) setTaskGroups(activeProj.taskGroups);
             if (activeProj.cardTaskLinks) setCardTaskLinks(activeProj.cardTaskLinks);
+
+            // Load reminder data
+            const loadedReminders = activeProj.reminders || DEFAULT_REMINDERS;
+            setReminders(loadedReminders);
+            
+            // Show workspace-open reminder after a short delay
+            setTimeout(() => {
+              const openReminders = loadedReminders.filter(r => r.enabled && r.showOnWorkspaceOpen);
+              if (openReminders.length > 0) {
+                const picked = openReminders[Math.floor(Math.random() * openReminders.length)];
+                setReminderNotificationQueue(q => [...q, { id: picked.id, icon: picked.icon, title: 'Welcome Back', content: picked.content }]);
+              }
+            }, 1500);
             
             // Default project is always password-free
             const isDefaultProject = activeProj.id === resolvedDefaultId;
@@ -814,7 +851,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -826,7 +863,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1369,6 +1406,116 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handlePinKey);
   }, [transform]);
 
+  // --- R key toggles reminder panel ---
+  useEffect(() => {
+    const handleReminderKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        setShowReminderPanel(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleReminderKey);
+    return () => window.removeEventListener('keydown', handleReminderKey);
+  }, []);
+
+  // --- Reminder Scheduling Engine ---
+  useEffect(() => {
+    if (!initialized) return;
+
+    // Initialize nextReminderAt for reminders that don't have it
+    setReminders(prev => prev.map(r => {
+      if (r.enabled && !r.nextReminderAt) {
+        return { ...r, nextReminderAt: Date.now() + r.frequency * 60000 };
+      }
+      return r;
+    }));
+
+    reminderCheckIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+
+      // Skip if a notification is already being displayed
+      if (reminderNotificationRef.current) return;
+
+      let firedThisTick = false;
+
+      setReminders(prev => {
+        const firedReminders = [];
+        const updated = prev.map(r => {
+          if (!r.enabled) return r;
+          if (!r.nextReminderAt) return r;
+
+          // Check active hours
+          if (r.activeHours) {
+            const currentTime = new Date();
+            const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+            const [startH, startM] = r.activeHours.start.split(':').map(Number);
+            const [endH, endM] = r.activeHours.end.split(':').map(Number);
+            const startMinutes = startH * 60 + startM;
+            const endMinutes = endH * 60 + endM;
+            if (startMinutes > endMinutes) {
+              // Overnight range (e.g., 22:00-06:00): block only if between end and start
+              if (currentMinutes < startMinutes && currentMinutes > endMinutes) return r;
+            } else {
+              if (currentMinutes < startMinutes || currentMinutes > endMinutes) return r;
+            }
+          }
+
+          if (now >= r.nextReminderAt) {
+            firedReminders.push(r);
+            return { ...r, lastShownAt: now, nextReminderAt: now + r.frequency * 60000 };
+          }
+          return r;
+        });
+
+        if (firedReminders.length > 0) {
+          firedThisTick = true;
+          setTimeout(() => {
+            const notifications = firedReminders.map(r => ({ id: r.id, icon: r.icon, title: r.title, content: r.content }));
+            setReminderNotificationQueue(q => [...q, ...notifications]);
+          }, 0);
+        }
+
+        return firedReminders.length > 0 ? updated : prev;
+      });
+
+      // Long session detection (every 60 minutes) - skip if already fired a reminder this tick
+      if (!firedThisTick && now - lastSessionNotifiedAtRef.current >= 3600000) {
+        lastSessionNotifiedAtRef.current = now;
+        const sessionMinutes = Math.floor((now - sessionStartTime) / 60000);
+        setTimeout(() => {
+          setReminderNotificationQueue(q => [...q, {
+            id: 'session-' + sessionMinutes,
+            icon: '\u23F0',
+            title: 'Long Session Detected',
+            content: `You have been working for ${sessionMinutes} minutes. Consider taking a short break.`
+          }]);
+        }, 0);
+      }
+    }, 60000);
+
+    return () => { if (reminderCheckIntervalRef.current) clearInterval(reminderCheckIntervalRef.current); };
+  }, [initialized, sessionStartTime]);
+
+  // --- Reminder Notification Queue Consumer & Auto-Dismiss ---
+  const activeReminderNotification = reminderNotificationQueue.length > 0 ? reminderNotificationQueue[0] : null;
+
+  const dismissReminderNotification = useCallback(() => {
+    setReminderNotificationQueue(q => q.slice(1));
+  }, []);
+
+  useEffect(() => {
+    reminderNotificationRef.current = activeReminderNotification;
+    if (activeReminderNotification) {
+      if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current);
+      reminderNotificationTimerRef.current = setTimeout(() => {
+        dismissReminderNotification();
+      }, 8000);
+    }
+    return () => { if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current); };
+  }, [activeReminderNotification, dismissReminderNotification]);
+
   // --- S key toggles sidebar ---
   useEffect(() => {
     const handleSidebarKey = (e) => {
@@ -1599,6 +1746,7 @@ export default function WorkflowApp() {
       { id: 'tg-followup', name: 'Follow-up', order: 4 },
     ]);
     setCardTaskLinks(target.cardTaskLinks || []);
+    setReminders(target.reminders || DEFAULT_REMINDERS);
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
     setIsAuthenticated(true);
@@ -1649,6 +1797,7 @@ export default function WorkflowApp() {
       { id: 'tg-followup', name: 'Follow-up', order: 4 },
     ]);
     setCardTaskLinks(target.cardTaskLinks || []);
+    setReminders(target.reminders || DEFAULT_REMINDERS);
     // Default project is always password-free
     if (isDefault) {
       setStoredPassword('');
@@ -4107,6 +4256,13 @@ export default function WorkflowApp() {
                 >
                   <MapPin className="w-3.5 h-3.5" /> Pins
                 </button>
+                <button
+                  onClick={() => setShowReminderPanel(!showReminderPanel)}
+                  title="Reminders (R)"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showReminderPanel ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                >
+                  <Bell className="w-3.5 h-3.5" /> Reminders
+                </button>
               </div>
             </div>
 
@@ -4860,6 +5016,7 @@ export default function WorkflowApp() {
                   )}
                 </div>
               )}
+
               <button
                 onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
                 className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}
@@ -5335,6 +5492,34 @@ export default function WorkflowApp() {
           />
         )}
 
+        {/* --- Reminder Panel --- */}
+        {showReminderPanel && viewMode === 'canvas' && (
+          <ReminderPanel
+            reminders={reminders}
+            showPanel={showReminderPanel}
+            onClose={() => setShowReminderPanel(false)}
+            onAddReminder={(reminder) => { setReminders(prev => [...prev, { ...reminder, id: `r-${Date.now()}`, createdAt: Date.now(), lastShownAt: null, nextReminderAt: reminder.enabled ? Date.now() + reminder.frequency * 60000 : null }]); }}
+            onUpdateReminder={(id, updates) => { setReminders(prev => prev.map(r => r.id === id ? { ...r, ...updates, nextReminderAt: updates.enabled === false ? null : (updates.frequency && updates.frequency !== r.frequency ? Date.now() + updates.frequency * 60000 : r.nextReminderAt) } : r)); }}
+            onDeleteReminder={(id) => { setReminders(prev => prev.filter(r => r.id !== id)); }}
+            onToggleReminder={(id) => { setReminders(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled, nextReminderAt: !r.enabled ? Date.now() + r.frequency * 60000 : null } : r)); }}
+            onImportReminders={(imported) => { setReminders(prev => [...prev, ...imported.map(r => ({ ...r, id: `r-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, lastShownAt: null, nextReminderAt: r.enabled ? Date.now() + r.frequency * 60000 : null }))]); }}
+            onExportReminders={() => {
+              const exportData = { type: 'thoughtflow-reminder-collection', version: 1, name: 'My Reminders', reminders: reminders, createdAt: new Date().toISOString(), exportedAt: new Date().toISOString() };
+              const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `thoughtflow-reminders-${new Date().toISOString().slice(0,10)}.json`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+            onEnableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: true, nextReminderAt: Date.now() + r.frequency * 60000 }))); }}
+            onDisableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: false, nextReminderAt: null }))); }}
+          />
+        )}
+
         {/* --- Outline Backlog Board View --- */}
         {viewMode === 'outline' && (
           <div className="flex-1 overflow-hidden flex flex-col bg-slate-50">
@@ -5515,6 +5700,25 @@ export default function WorkflowApp() {
       {toastMessage && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-full shadow-lg animate-in fade-in duration-200">
           {toastMessage}
+        </div>
+      )}
+
+      {/* --- Reminder Notification Toast --- */}
+      {activeReminderNotification && (
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[85] animate-in slide-in-from-bottom fade-in duration-300 max-w-sm w-full mx-4">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200 px-4 py-3 flex items-start gap-3">
+            <span className="text-2xl shrink-0">{activeReminderNotification.icon}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-800">{activeReminderNotification.title}</p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeReminderNotification.content}</p>
+            </div>
+            <button
+              onClick={dismissReminderNotification}
+              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 

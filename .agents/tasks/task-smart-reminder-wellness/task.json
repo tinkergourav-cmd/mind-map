@@ -1,0 +1,7 @@
+{
+  "task_id": "task-smart-reminder-wellness",
+  "task_description": "Implement a Smart Workspace Reminder & Wellness System for the ThoughtFlow mind-map application. This includes: reminder data model and persistence, a full-featured ReminderPanel with CRUD/search/import/export/backup/restore, a scheduling engine supporting time-based intervals/workspace-open/long-session detection/random mode, non-intrusive notification toasts, toolbar integration with Bell icon, and R keyboard shortcut.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
