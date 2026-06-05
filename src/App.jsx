@@ -447,6 +447,7 @@ export default function WorkflowApp() {
     reset: 'Alt+R'
   });
   const [editingShortcut, setEditingShortcut] = useState(null);
+  const [shortcutWarning, setShortcutWarning] = useState(null);
   const [showShortcutsSection, setShowShortcutsSection] = useState(false);
   const alarmAudioRef = useRef(null);
 
@@ -856,7 +857,17 @@ export default function WorkflowApp() {
         });
       }, 1000);
     }
-    return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      // Clean up alarm audio on unmount
+      if (alarmAudioRef.current) {
+        try {
+          clearInterval(alarmAudioRef.current.beepInterval);
+          alarmAudioRef.current.audioCtx.close();
+        } catch (e) { /* ignore */ }
+        alarmAudioRef.current = null;
+      }
+    };
   }, [timerRunning, timerPaused]);
 
   // Keep projectsRef in sync with projects state for debounced localStorage writes
@@ -1526,9 +1537,22 @@ export default function WorkflowApp() {
     setReminderNotificationQueue(q => q.slice(1));
   }, []);
 
+  const dismissAllReminderNotifications = useCallback(() => {
+    setReminderNotificationQueue([]);
+  }, []);
+
   useEffect(() => {
     reminderNotificationRef.current = activeReminderNotification;
   }, [activeReminderNotification, dismissReminderNotification]);
+
+  // Auto-dismiss reminder after 60 seconds as fallback
+  useEffect(() => {
+    if (!activeReminderNotification) return;
+    const autoDismissTimer = setTimeout(() => {
+      setReminderNotificationQueue(q => q.slice(1));
+    }, 60000);
+    return () => clearTimeout(autoDismissTimer);
+  }, [activeReminderNotification]);
 
   // --- Timer Keyboard Shortcuts ---
   useEffect(() => {
@@ -1567,7 +1591,7 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleTimerShortcut);
     return () => window.removeEventListener('keydown', handleTimerShortcut);
-  }, [timerShortcuts, timerRunning, timerPaused, editingShortcut]);
+  }, [timerShortcuts, timerRunning, timerPaused, editingShortcut, startTimer, pauseTimer, resumeTimer, resetTimer]);
 
   // --- S key toggles sidebar ---
   useEffect(() => {
@@ -3397,15 +3421,15 @@ export default function WorkflowApp() {
   };
 
   // --- Timer Functions ---
-  const startTimer = (minutes) => {
+  const startTimer = useCallback((minutes) => {
     setTimerSeconds(minutes * 60);
     setTimerRunning(true);
     setTimerPaused(false);
     setTimerDone(false);
-  };
-  const pauseTimer = () => { setTimerPaused(true); };
-  const resumeTimer = () => { setTimerPaused(false); };
-  const resetTimer = () => {
+  }, []);
+  const pauseTimer = useCallback(() => { setTimerPaused(true); }, []);
+  const resumeTimer = useCallback(() => { setTimerPaused(false); }, []);
+  const resetTimer = useCallback(() => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     setTimerRunning(false);
     setTimerPaused(false);
@@ -3419,7 +3443,7 @@ export default function WorkflowApp() {
       } catch (e) { /* ignore */ }
       alarmAudioRef.current = null;
     }
-  };
+  }, []);
   const dismissAlarm = () => {
     setTimerDone(false);
     if (alarmAudioRef.current) {
@@ -5122,7 +5146,7 @@ export default function WorkflowApp() {
                           <div key={action} className="flex items-center justify-between text-[10px]">
                             <span className="text-slate-600 capitalize">{action.replace(/([A-Z])/g, ' $1').replace(/(\d+)/g, ' $1').trim()}</span>
                             {editingShortcut === action ? (
-                              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-mono animate-pulse">Press keys...</span>
+                              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-mono animate-pulse">Press keys... (Esc to cancel)</span>
                             ) : (
                               <div className="flex items-center gap-1">
                                 <span className="px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[9px] font-mono">{key}</span>
@@ -5831,18 +5855,33 @@ export default function WorkflowApp() {
         <>
           <div className="fixed inset-0 z-[280] bg-slate-900/30 backdrop-blur-[2px]" onClick={dismissReminderNotification} />
           <div className="fixed inset-0 z-[285] flex items-center justify-center pointer-events-none">
-            <div className="pointer-events-auto max-w-sm w-full mx-4 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border-2 px-5 py-4 flex items-start gap-3" style={{ animation: 'reminder-glow 2s ease-in-out infinite' }}>
-              <span className="text-2xl shrink-0">{activeReminderNotification.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800">{activeReminderNotification.title}</p>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeReminderNotification.content}</p>
+            <div className="pointer-events-auto max-w-sm w-full mx-4 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border-2 px-5 py-4 flex flex-col gap-2" style={{ animation: 'reminder-glow 2s ease-in-out infinite' }}>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">{activeReminderNotification.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">{activeReminderNotification.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeReminderNotification.content}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {reminderNotificationQueue.length > 1 && (
+                    <button
+                      onClick={dismissAllReminderNotifications}
+                      className="px-2 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors"
+                    >Dismiss All</button>
+                  )}
+                  <button
+                    onClick={dismissReminderNotification}
+                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={dismissReminderNotification}
-                className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {reminderNotificationQueue.length > 1 && (
+                <div className="text-center">
+                  <span className="text-[10px] text-slate-400 font-medium">(1 of {reminderNotificationQueue.length})</span>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -5940,9 +5979,15 @@ export default function WorkflowApp() {
       {editingShortcut && (
         <div
           className="fixed inset-0 z-[400] bg-transparent"
+          onClick={() => setEditingShortcut(null)}
           onKeyDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            // Escape cancels without saving
+            if (e.key === 'Escape') {
+              setEditingShortcut(null);
+              return;
+            }
             const pressed = [];
             if (e.ctrlKey) pressed.push('Ctrl');
             if (e.altKey) pressed.push('Alt');
@@ -5952,6 +5997,13 @@ export default function WorkflowApp() {
             if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) pressed.push(key);
             if (pressed.length > 1 || (pressed.length === 1 && !['Control', 'Alt', 'Shift', 'Meta'].includes(pressed[0]))) {
               const combo = pressed.join('+');
+              // Reserved shortcuts that conflict with built-in keys
+              const reservedShortcuts = ['S', 'M', 'T', 'N', 'R', 'P', 'C', 'Alt+Shift+X', 'Ctrl+Shift+/'];
+              if (reservedShortcuts.includes(combo)) {
+                setShortcutWarning('That shortcut is reserved by the app');
+                setTimeout(() => setShortcutWarning(null), 2000);
+                return;
+              }
               setTimerShortcuts(prev => ({ ...prev, [editingShortcut]: combo }));
               setEditingShortcut(null);
             }
@@ -5959,6 +6011,13 @@ export default function WorkflowApp() {
           tabIndex={0}
           ref={(el) => { if (el) el.focus(); }}
         />
+      )}
+
+      {/* --- Shortcut Collision Warning Toast --- */}
+      {shortcutWarning && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[500] px-4 py-2 bg-amber-100 border border-amber-300 text-amber-800 text-xs font-semibold rounded-lg shadow-lg animate-pulse">
+          {shortcutWarning}
+        </div>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
