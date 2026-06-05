@@ -4252,6 +4252,13 @@ export default function WorkflowApp() {
                 >
                   <MapPin className="w-3.5 h-3.5" /> Pins
                 </button>
+                <button
+                  onClick={() => setShowReminderPanel(!showReminderPanel)}
+                  title="Reminders (R)"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showReminderPanel ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                >
+                  <Bell className="w-3.5 h-3.5" /> Reminders
+                </button>
               </div>
             </div>
 
@@ -5005,13 +5012,7 @@ export default function WorkflowApp() {
                   )}
                 </div>
               )}
-              <button
-                onClick={() => setShowReminderPanel(prev => !prev)}
-                className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showReminderPanel ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                title="Reminders (R)"
-              >
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+
               <button
                 onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
                 className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}

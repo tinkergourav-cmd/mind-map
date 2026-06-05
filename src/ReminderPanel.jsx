@@ -17,6 +17,7 @@ const REMINDER_ICONS = [
 ];
 
 const FREQUENCY_OPTIONS = [
+  { value: 1, label: '1min' },
   { value: 15, label: '15min' },
   { value: 30, label: '30min' },
   { value: 60, label: '1hr' },
@@ -27,6 +28,7 @@ const FREQUENCY_OPTIONS = [
 ];
 
 function getFrequencyLabel(freq) {
+  if (freq <= 1) return '1m';
   if (freq <= 15) return '15m';
   if (freq <= 30) return '30m';
   if (freq <= 60) return '1h';
