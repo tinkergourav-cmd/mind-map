@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Implement the Pin Location system: pin data model, state management in App.jsx, canvas pin rendering with consistent size at all zoom levels, pin creation/editing/deletion logic, smooth navigation to pins, and export/import support. Also create a PinPanel.jsx sidebar component for pin management with workspace grouping, search/filter, and all pin actions.",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Add pin state and data model to App.jsx: Add state variables for pins (stored per-workspace in each workspace object as a `pins` array), pin visibility toggle, and the pin panel toggle. Pin data structure: { id, name, canvas_position_x, canvas_position_y, note, color, icon, visibility_status, created_date }. Add pins to the workspace objects in defaultWorkspaces with an empty pins array. Colors should use a predefined palette of 8 colors (red, blue, green, yellow, purple, orange, teal, pink). Icons should be a set of emojis: pin, star, check, lightbulb, flag, heart, bookmark, warning.",
+    "Step 2 - Add pin CRUD functions in App.jsx: (a) addPin(x, y) - creates a pin at given canvas coordinates with default name 'Pin N', default color red, default icon pin emoji, visibility true. (b) updatePin(pinId, updates) - updates pin properties (name, note, color, icon). (c) deletePin(pinId) - removes pin from workspace. (d) togglePinVisibility(pinId) - toggles individual pin visibility. (e) toggleAllPinsVisibility(visible) - show/hide all pins in workspace. (f) navigateToPin(pinId) - smooth pan to pin location (use the same pattern as locateCard: calculate center transform, set focusedPinId for highlight animation).",
+    "Step 3 - Add pin creation flow to the canvas context menu in App.jsx: In the right-click context menu (contextMenu state), add a 'Drop Pin Here' option that calls addPin with the context menu's canvas coordinates. Also add a 'P' keyboard shortcut to create a pin at the current viewport center.",
+    "Step 4 - Render pins on the canvas in App.jsx: Inside the canvas transform layer (the div with transform style), after nodes are rendered, render each visible pin. Pins should use a transform that counteracts the canvas scale so they maintain consistent visual size (use style: transform: scale(1/transform.scale)). Each pin renders as a colored marker with the selected emoji icon inside. On hover, show a tooltip with the pin name and note. Clicking a pin should open an inline edit popover for rename/color/icon/note/delete.",
+    "Step 5 - Create src/PinPanel.jsx: A sidebar panel component (following the pattern of TaskPanel.jsx) that displays all pins grouped by workspace name. Props: pins (from all workspaces), workspaces (for names), activeTab (current workspace), onNavigateToPin, onUpdatePin, onDeletePin, onToggleVisibility, onToggleAllVisibility, showPanel, onClose. Features: (a) collapsible workspace sections, (b) search/filter input at the top, (c) each pin entry shows color dot + icon + name, (d) clicking a pin entry calls onNavigateToPin, (e) hover shows note preview, (f) inline actions: rename, change color, change icon, delete, toggle visibility.",
+    "Step 6 - Integrate PinPanel into App.jsx layout: Import PinPanel. Add showPinPanel state (already added in step 1). Add a 'Pins' toggle button in the left sidebar (similar to the Tasks button). Render PinPanel alongside the canvas area, using the same layout pattern as TaskPanel (split view). Add 'P' to keyboard shortcut handling to toggle pin panel when no modifier keys are pressed (check no conflict - reassign pin creation shortcut to Shift+P).",
+    "Step 7 - Include pins in export/import: In exportData(), include pins from each workspace. In handleImport(), read pins from imported data and merge into workspaces. In exportAllData() and exportSingleProject(), pins are already included since they are part of workspace objects. In localStorage auto-save, pins are automatically saved since they are stored inside workspace objects.",
+    "Step 8 - Include pins in MiniMap rendering: In MiniMap.jsx, accept a pins prop and render small colored dots for each visible pin at their world coordinates (same pattern as nodes but smaller, 4px dots with the pin's color)."
+  ],
+  "acceptance_criteria": [
+    "Running `npx vite build` succeeds without errors",
+    "Pin data structure is stored per-workspace with all required fields (id, name, canvas_position_x, canvas_position_y, note, color, icon, visibility_status, created_date)",
+    "Pins can be created via right-click context menu and keyboard shortcut",
+    "Pins render on canvas with consistent visual size regardless of zoom level",
+    "Pin panel sidebar displays pins grouped by workspace with search/filter",
+    "Clicking a pin in the panel navigates the canvas to that pin's location",
+    "Pins are included in export/import data flows",
+    "Pin colors and icons are customizable from predefined palettes",
+    "Pins support individual and bulk visibility toggling",
+    "Pin edit popover on canvas allows rename, note, color change, icon change, and delete"
+  ],
+  "verification": [
+    "Run `cd /projects/sandbox/mind-map && npx vite build` and confirm it completes with exit code 0"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation complete. Pins stored per-workspace as pins array, auto-included in export/import/localStorage. P key toggles pin panel, Shift+P drops pin at center. MiniMap updated to render pin dots. Build passes cleanly."
+}

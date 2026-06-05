@@ -7,10 +7,11 @@ import {
   Copy, ArrowUp, ArrowDown, RefreshCw, LayoutList, MonitorSpeaker,
   MoreVertical, ImageIcon, ChevronUp, Scissors, ClipboardPaste,
   Lock, Shield, Eye, EyeOff, GitBranch, Map, Timer,
-  CheckSquare, ListTodo
+  CheckSquare, ListTodo, MapPin
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
+import PinPanel, { PIN_ICONS } from './PinPanel';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -184,7 +185,8 @@ const defaultWorkspaces = [
       { id: 'e2', source: '2', target: '3' },
       { id: 'e3', source: '3', target: '4' }
     ],
-    images: []
+    images: [],
+    pins: []
   }
 ];
 
@@ -391,6 +393,17 @@ export default function WorkflowApp() {
   const [showTaskPanel, setShowTaskPanel] = useState(false);
   const [taskPanelMode, setTaskPanelMode] = useState('split');
 
+  // --- Pin System States ---
+  const [showPinPanel, setShowPinPanel] = useState(false);
+  const [focusedPinId, setFocusedPinId] = useState(null);
+  const [editingPinOnCanvas, setEditingPinOnCanvas] = useState(null);
+  const [hoveredPinId, setHoveredPinId] = useState(null);
+  const [selectedPinId, setSelectedPinId] = useState(null);
+  const [draggingPin, setDraggingPin] = useState(null);
+  const [pinsVisible, setPinsVisible] = useState(true);
+  const lastPKeyTimeRef = useRef(0);
+  const pinDraggedRef = useRef(false);
+
   // --- Timer States ---
   const [showTimer, setShowTimer] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -490,6 +503,7 @@ export default function WorkflowApp() {
 
   const handleWheel = useCallback((e) => {
     e.preventDefault();
+    setEditingPinOnCanvas(null);
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setTransform(prev => {
       const newScale = Math.max(0.2, Math.min(3, prev.scale + delta));
@@ -1318,6 +1332,42 @@ export default function WorkflowApp() {
     window.addEventListener('keydown', handleTaskKey);
     return () => window.removeEventListener('keydown', handleTaskKey);
   }, [focusedNodeId]);
+
+  // --- P key toggles pin visibility, PP (double-press) toggles pin panel, Shift+P drops pin at viewport center ---
+  useEffect(() => {
+    const handlePinKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'P' && e.shiftKey) {
+        e.preventDefault();
+        if (!workspaceRef.current) return;
+        const rect = workspaceRef.current.getBoundingClientRect();
+        const canvasX = (rect.width / 2 - transform.x) / transform.scale;
+        const canvasY = (rect.height / 2 - transform.y) / transform.scale;
+        addPinRef.current(canvasX, canvasY);
+        return;
+      }
+      if ((e.key === 'p' || e.key === 'P') && !e.shiftKey) {
+        e.preventDefault();
+        const now = Date.now();
+        const timeSinceLast = now - lastPKeyTimeRef.current;
+        lastPKeyTimeRef.current = now;
+        if (timeSinceLast < 300) {
+          // Double-press P: toggle pin panel
+          setShowPinPanel(prev => !prev);
+        } else {
+          // Single press P: toggle pin visibility (delayed to allow double-press detection)
+          setTimeout(() => {
+            if (Date.now() - lastPKeyTimeRef.current >= 280) {
+              setPinsVisible(prev => !prev);
+            }
+          }, 300);
+        }
+      }
+    };
+    window.addEventListener('keydown', handlePinKey);
+    return () => window.removeEventListener('keydown', handlePinKey);
+  }, [transform]);
 
   // --- S key toggles sidebar ---
   useEffect(() => {
@@ -2297,6 +2347,8 @@ export default function WorkflowApp() {
     setCloneToTabMenu(null);
     setFocusedNodeId(null);
     setFocusedGroupId(null);
+    setEditingPinOnCanvas(null);
+    setSelectedPinId(null);
 
     const isClickBg = e.target === workspaceRef.current || e.target.classList.contains('canvas-grid-clickable');
     if (isClickBg) {
@@ -2421,8 +2473,16 @@ export default function WorkflowApp() {
         currentX: draggingImage.initialX + dx,
         currentY: draggingImage.initialY + dy
       }));
+    } else if (draggingPin) {
+      const dx = (e.clientX - draggingPin.startX) / transform.scale;
+      const dy = (e.clientY - draggingPin.startY) / transform.scale;
+      setDraggingPin(prev => ({
+        ...prev,
+        currentX: draggingPin.initialX + dx,
+        currentY: draggingPin.initialY + dy
+      }));
     }
-  }, [draggingNode, draggingGroup, draggingImage, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
 
 
   const handlePointerUp = useCallback(() => {
@@ -2594,6 +2654,15 @@ export default function WorkflowApp() {
       }
     }
 
+    if (draggingPin) {
+      if (draggingPin.currentX !== draggingPin.initialX || draggingPin.currentY !== draggingPin.initialY) {
+        pinDraggedRef.current = true;
+        updateActiveWorkspace(ws => ({
+          pins: (ws.pins || []).map(p => p.id === draggingPin.id ? { ...p, canvas_position_x: draggingPin.currentX, canvas_position_y: draggingPin.currentY } : p)
+        }));
+      }
+    }
+
     setDraggingNode(null);
     draggingNodeRef.current = null;
     setDraggingGroup(null);
@@ -2603,8 +2672,9 @@ export default function WorkflowApp() {
     setConnectHoverNodeId(null);
     setIsPanning(false);
     setDraggingImage(null);
+    setDraggingPin(null);
     dragSnapshot.current = null;
-  }, [draggingNode, draggingGroup, draggingImage, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
 
 
   // --- Node, Edge, and Group Creators ---
@@ -2832,6 +2902,73 @@ export default function WorkflowApp() {
     if (taskPanelMode === 'fullscreen') {
       setTaskPanelMode('split');
     }
+  };
+
+  // --- Pin System Functions ---
+  const addPin = (canvasX, canvasY) => {
+    const currentPins = activeWs?.pins || [];
+    const pinCount = currentPins.length + 1;
+    const newPin = {
+      id: `pin-${Date.now()}`,
+      name: `Pin ${pinCount}`,
+      canvas_position_x: canvasX,
+      canvas_position_y: canvasY,
+      note: '',
+      color: '#ef4444',
+      icon: '\ud83d\udccc',
+      visibility_status: true,
+      created_date: new Date().toISOString(),
+    };
+    updateActiveWorkspace(ws => ({
+      pins: [...(ws.pins || []), newPin],
+    }));
+    showToast(`Pin dropped: ${newPin.name}`);
+  };
+
+  const addPinRef = useRef(addPin);
+  useEffect(() => { addPinRef.current = addPin; });
+
+  const updatePin = (pinId, updates, workspaceId) => {
+    const targetId = workspaceId || activeTab;
+    setWorkspaces(prev => prev.map(ws => ws.id === targetId ? { ...ws, pins: (ws.pins || []).map(p => p.id === pinId ? { ...p, ...updates } : p) } : ws));
+  };
+
+  const deletePin = (pinId, workspaceId) => {
+    const targetId = workspaceId || activeTab;
+    setWorkspaces(prev => prev.map(ws => ws.id === targetId ? { ...ws, pins: (ws.pins || []).filter(p => p.id !== pinId) } : ws));
+    if (editingPinOnCanvas === pinId) setEditingPinOnCanvas(null);
+    if (focusedPinId === pinId) setFocusedPinId(null);
+  };
+
+  const togglePinVisibility = (pinId, workspaceId) => {
+    const targetId = workspaceId || activeTab;
+    setWorkspaces(prev => prev.map(ws => ws.id === targetId ? { ...ws, pins: (ws.pins || []).map(p => p.id === pinId ? { ...p, visibility_status: !p.visibility_status } : p) } : ws));
+  };
+
+  const toggleAllPinsVisibility = (visible) => {
+    updateActiveWorkspace(ws => ({
+      pins: (ws.pins || []).map(p => ({ ...p, visibility_status: visible })),
+    }));
+  };
+
+  const navigateToPin = (pinId, workspaceId) => {
+    // Switch workspace if needed
+    if (workspaceId && workspaceId !== activeTab) {
+      setActiveTab(workspaceId);
+    }
+    const targetWs = workspaceId ? workspaces.find(w => w.id === workspaceId) : activeWs;
+    const pin = (targetWs?.pins || []).find(p => p.id === pinId);
+    if (!pin || !workspaceRef.current) return;
+    const rect = workspaceRef.current.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    setTransform(prev => ({
+      x: centerX - pin.canvas_position_x * prev.scale,
+      y: centerY - pin.canvas_position_y * prev.scale,
+      scale: prev.scale,
+    }));
+    setFocusedPinId(pinId);
+    setTimeout(() => setFocusedPinId(null), 2000);
   };
 
   const addTaskFromCardRef = useRef(addTaskFromCard);
@@ -3963,6 +4100,13 @@ export default function WorkflowApp() {
                 >
                   <ListTodo className="w-3.5 h-3.5" /> Tasks
                 </button>
+                <button
+                  onClick={() => setShowPinPanel(!showPinPanel)}
+                  title="Pins"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showPinPanel ? 'bg-rose-100 text-rose-700 border border-rose-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                >
+                  <MapPin className="w-3.5 h-3.5" /> Pins
+                </button>
               </div>
             </div>
 
@@ -4557,6 +4701,75 @@ export default function WorkflowApp() {
               );
             })}
 
+            {/* --- Pins Layer --- */}
+            {pinsVisible && (activeWs?.pins || []).filter(p => p.visibility_status).map(pin => {
+              const isDraggingThis = draggingPin && draggingPin.id === pin.id;
+              const displayX = isDraggingThis ? draggingPin.currentX : pin.canvas_position_x;
+              const displayY = isDraggingThis ? draggingPin.currentY : pin.canvas_position_y;
+              return (
+              <div
+                key={pin.id}
+                className={`absolute pointer-events-auto z-[55] ${focusedPinId === pin.id ? 'animate-bounce' : ''} ${isDraggingThis ? 'cursor-grabbing' : 'cursor-pointer'}`}
+                style={{
+                  left: displayX,
+                  top: displayY,
+                  transform: `translate(-50%, -50%) scale(${1 / transform.scale})`,
+                  transformOrigin: 'center center',
+                }}
+                onMouseEnter={() => setHoveredPinId(pin.id)}
+                onMouseLeave={() => setHoveredPinId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (pinDraggedRef.current) { pinDraggedRef.current = false; return; }
+                  setSelectedPinId(selectedPinId === pin.id ? null : pin.id);
+                  setEditingPinOnCanvas(null);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  if (pinDraggedRef.current) { pinDraggedRef.current = false; return; }
+                  setEditingPinOnCanvas(editingPinOnCanvas === pin.id ? null : pin.id);
+                  setSelectedPinId(pin.id);
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.button !== 0) return;
+                  setDraggingPin({
+                    id: pin.id,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    initialX: pin.canvas_position_x,
+                    initialY: pin.canvas_position_y,
+                    currentX: pin.canvas_position_x,
+                    currentY: pin.canvas_position_y
+                  });
+                }}
+                onGotPointerCapture={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); }}
+              >
+                {/* Selection ring */}
+                {(selectedPinId === pin.id || editingPinOnCanvas === pin.id) && (
+                  <div className="absolute inset-0 -m-1 rounded-full ring-2 ring-rose-400 ring-offset-1 pointer-events-none" />
+                )}
+                {/* Pin icon with dark outline */}
+                <div className="relative flex items-center justify-center">
+                  <span
+                    className="text-2xl select-none"
+                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5)) drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
+                  >
+                    {pin.icon}
+                  </span>
+                </div>
+
+                {/* Tooltip on hover */}
+                {hoveredPinId === pin.id && editingPinOnCanvas !== pin.id && !isDraggingThis && (
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 bg-slate-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap max-w-[150px] truncate pointer-events-none z-[100]">
+                    <div className="font-semibold">{pin.name}</div>
+                    {pin.note && <div className="text-slate-300 truncate">{pin.note}</div>}
+                  </div>
+                )}
+              </div>
+              );
+            })}
+
             {/* --- Selection Box --- */}
             {selectionBox && (
               <div
@@ -4577,6 +4790,7 @@ export default function WorkflowApp() {
             nodes={nodes}
             groups={groups}
             images={activeWs?.images || []}
+            pins={pinsVisible ? (activeWs?.pins || []).filter(p => p.visibility_status) : []}
             transform={transform}
             setTransform={setTransform}
             workspaceRef={workspaceRef}
@@ -4687,6 +4901,15 @@ export default function WorkflowApp() {
               </button>
               <button className="w-full text-left px-4 py-2 hover:bg-indigo-50 hover:text-indigo-900 text-sm font-semibold text-slate-700 flex items-center" onClick={() => { createGroup(contextMenu.clientX, contextMenu.clientY); setContextMenu(null); }}>
                 <Layers className="w-4 h-4 mr-2 text-indigo-600" /> Create Group Here
+              </button>
+              <button className="w-full text-left px-4 py-2 hover:bg-rose-50 hover:text-rose-900 text-sm font-semibold text-slate-700 flex items-center" onClick={() => {
+                const rect = workspaceRef.current.getBoundingClientRect();
+                const canvasX = (contextMenu.clientX - rect.left - transform.x) / transform.scale;
+                const canvasY = (contextMenu.clientY - rect.top - transform.y) / transform.scale;
+                addPin(canvasX, canvasY);
+                setContextMenu(null);
+              }}>
+                <MapPin className="w-4 h-4 mr-2 text-rose-600" /> Drop Pin Here
               </button>
               {localStorage.getItem('nexus-clipboard') && (
                 <button className="w-full text-left px-4 py-2 hover:bg-indigo-50 hover:text-indigo-900 text-sm font-semibold text-slate-700 flex items-center" onClick={() => {
@@ -4831,6 +5054,73 @@ export default function WorkflowApp() {
               </button>
             </div>
           )}
+
+          {/* --- Pin Edit Popover (rendered outside transform layer for z-index) --- */}
+          {editingPinOnCanvas && (() => {
+            const pin = (activeWs?.pins || []).find(p => p.id === editingPinOnCanvas);
+            if (!pin || !workspaceRef.current) return null;
+            const rect = workspaceRef.current.getBoundingClientRect();
+            const screenX = pin.canvas_position_x * transform.scale + transform.x;
+            const screenY = pin.canvas_position_y * transform.scale + transform.y;
+            // Position popover below the pin
+            const popoverLeft = Math.min(Math.max(screenX, 120), rect.width - 120);
+            const popoverTop = screenY + 24;
+            return (
+              <div
+                className="absolute inset-0 z-[10000]"
+                onClick={() => setEditingPinOnCanvas(null)}
+                onPointerDown={(e) => { if (e.target === e.currentTarget) setEditingPinOnCanvas(null); }}
+              >
+                <div
+                  className="absolute bg-white border border-slate-200 rounded-xl shadow-2xl p-3 min-w-[220px]"
+                  style={{ left: popoverLeft, top: popoverTop, transform: 'translateX(-50%)' }}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="text"
+                    value={pin.name}
+                    onChange={(e) => updatePin(pin.id, { name: e.target.value })}
+                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-rose-300"
+                    placeholder="Pin name"
+                    autoFocus
+                  />
+                  <textarea
+                    value={pin.note || ''}
+                    onChange={(e) => updatePin(pin.id, { note: e.target.value })}
+                    className="w-full text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-2 text-slate-600 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-rose-300"
+                    placeholder="Note (optional)"
+                    rows={2}
+                  />
+                  <div className="mb-2">
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {PIN_ICONS.map(ic => (
+                        <button
+                          key={ic.value}
+                          onClick={() => updatePin(pin.id, { icon: ic.value })}
+                          className={`w-6 h-6 rounded flex items-center justify-center text-sm ${pin.icon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
+                          title={ic.label}
+                        >
+                          {ic.value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end pt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => { deletePin(pin.id); setEditingPinOnCanvas(null); setSelectedPinId(null); }}
+                      className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-red-500 rounded transition-colors"
+                      title="Delete pin"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </main>
 
         {/* --- Clone Panels (Three-Panel Split View) --- */}
@@ -5027,6 +5317,21 @@ export default function WorkflowApp() {
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroup={updateTaskGroup}
             onLocateCard={locateCard}
+          />
+        )}
+
+        {/* --- Pin Panel --- */}
+        {showPinPanel && viewMode === 'canvas' && (
+          <PinPanel
+            workspaces={workspaces}
+            activeTab={activeTab}
+            onNavigateToPin={navigateToPin}
+            onUpdatePin={updatePin}
+            onDeletePin={deletePin}
+            onToggleVisibility={togglePinVisibility}
+            onToggleAllVisibility={toggleAllPinsVisibility}
+            showPanel={showPinPanel}
+            onClose={() => setShowPinPanel(false)}
           />
         )}
 

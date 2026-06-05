@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Pin system usability improvements: z-index fix (portal popover), single-click select + drag, double-click edit, remove Save button, subtle delete option, click-outside-to-close, P key toggles visibility, PP double-press toggles panel.",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Add pin selection and dragging state: Add selectedPinId state, draggingPin state (with startX, startY, offsetX, offsetY). Add pinsVisible state for toggling all pin visibility at once.",
+    "Step 2 - Change keyboard shortcuts: P key now toggles pin visibility (show/hide all pins). PP double-press (within 300ms) toggles pin panel. Shift+P still drops pin at center.",
+    "Step 3 - Change pin click behavior: Single click selects pin (sets selectedPinId, shows ring). Double click opens edit popup. Add drag support for selected pins.",
+    "Step 4 - Move edit popover outside transform layer: Render the edit popover as a fixed/absolute positioned element relative to the viewport (outside the canvas transform container) to guarantee it renders above everything.",
+    "Step 5 - Simplify edit popup: Remove Save button. Add subtle delete option (small trash icon or text link). Click outside closes popup.",
+    "Step 6 - Verify build passes."
+  ],
+  "acceptance_criteria": [
+    "Running `npx vite build` succeeds without errors",
+    "Single click on pin selects it with visual ring indicator",
+    "Double click on pin opens edit popup",
+    "Selected pin can be dragged to new position",
+    "Pin position saves automatically on drop",
+    "Edit popup renders above all canvas content (portal outside transform layer)",
+    "No Save button in edit popup",
+    "Subtle delete option available in edit popup",
+    "Clicking outside edit popup closes it",
+    "P key toggles all pin visibility",
+    "PP double-press toggles pin panel",
+    "Shift+P still creates pin at center"
+  ],
+  "verification": [
+    "Run `cd /projects/sandbox/mind-map && npx vite build` and confirm it completes with exit code 0"
+  ],
+  "blocked_reason": null,
+  "findings": "All usability improvements implemented. Pin edit popover now renders outside the canvas transform layer with z-[10000], guaranteeing it appears above all canvas content. Single click selects (with rose-400 ring), double click opens edit popup. Pins are draggable with auto-save. P key toggles visibility with 300ms delay for double-press detection. PP opens panel. Save button removed, auto-save via onChange. Subtle trash icon delete at bottom of popup. Click-outside-to-close via overlay div. Build passes cleanly."
+}
