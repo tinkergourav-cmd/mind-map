@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement all three alarm system improvements in App.jsx: (1) keyboard shortcut to open timer panel, (2) visual notification when timer finishes, (3) persistent countdown display on canvas when timer panel is closed.",
+  "status": "pending",
+  "steps": [
+    "Step 1 - Keyboard Shortcut: Add a useEffect block (following the pattern of existing shortcuts like R key for reminders at ~line 1587) that listens for the F key press to toggle showTimer. The shortcut should: skip if target is INPUT/TEXTAREA/SELECT or isContentEditable, skip if ctrlKey/metaKey/altKey/shiftKey is held, call setShowTimer(prev => !prev). Place this near the other keyboard shortcut effects around line 1600.",
+    "Step 2 - Visual Notification: Modify the timer countdown effect (around line 809-830) where timerDone is set to true. After the audio beep, also show a visual toast notification. Use the existing showToast pattern but with a dedicated timer notification state. Add a new state `timerNotification` (boolean, default false) that gets set to true when the timer finishes. Render a fixed-position notification banner (similar to the reminder notification toast at line 5730) that appears at the top-center of the screen when `timerNotification` is true, showing 'Timer Complete!' with an orange/amber theme. The notification should auto-dismiss after 5 seconds or when clicked. Keep it lightweight - a small banner with text and an X button, consistent with the existing reminder notification style.",
+    "Step 3 - Persistent Countdown Display: Add a new fixed-position element that renders when `timerRunning` is true AND `showTimer` is false. This countdown indicator should: be positioned at top-right of the viewport (fixed, z-50), show the time remaining in mm:ss format, render at 50% opacity (`opacity-50`), use a smaller text size (text-sm), be clickable to open the timer panel (onClick => setShowTimer(true)), update display based on timerSeconds state (which already updates every second internally but we want minute-granularity display when panel is closed). For the minute-granularity requirement: when the timer panel is closed, round up the display to the nearest minute (e.g., show '05:00' when 4:32 remains means show '05' minutes). When panel is open, continue showing exact seconds. The countdown element should have a subtle background (bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2 py-1 cursor-pointer), and use the Timer icon from lucide-react alongside the time text.",
+    "Step 4 - Update the timer toggle button tooltip: Change the title attribute on the Timer button (around line 5052) from 'Timer' to 'Timer (F)' to make the shortcut discoverable."
+  ],
+  "acceptance_criteria": [
+    "Pressing 'F' key (when not in input) toggles the timer panel open/closed",
+    "The timer button tooltip shows 'Timer (F)' to indicate the shortcut",
+    "When a timer finishes, a visual notification banner appears at the top-center of the screen in addition to the existing audio beep",
+    "The visual notification auto-dismisses after 5 seconds or can be dismissed by clicking",
+    "When a timer is running and the timer panel is closed, a small countdown indicator appears at the top-right of the viewport",
+    "The countdown indicator shows at 50% opacity and smaller size",
+    "The countdown displays time rounded to the nearest minute (minute-granularity) when the panel is closed",
+    "Clicking the countdown indicator opens the timer panel",
+    "The countdown disappears when the timer panel is open or when the timer is not running"
+  ],
+  "verification": [
+    "Run `npm run build` in /projects/sandbox/mind-map and confirm it completes successfully with no errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

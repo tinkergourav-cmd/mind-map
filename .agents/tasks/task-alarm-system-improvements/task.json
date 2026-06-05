@@ -1,0 +1,7 @@
+{
+  "task_id": "task-alarm-system-improvements",
+  "task_description": "Improve the timer/alarm system with three lightweight quality-of-life improvements: (1) F key shortcut to open/close timer panel, (2) visual notification when timer completes, (3) persistent countdown display on canvas when timer panel is closed.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
