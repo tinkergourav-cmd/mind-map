@@ -435,7 +435,9 @@ export default function WorkflowApp() {
   const [timerPaused, setTimerPaused] = useState(false);
   const [timerDone, setTimerDone] = useState(false);
   const [timerCustomMinutes, setTimerCustomMinutes] = useState('');
+  const [timerNotification, setTimerNotification] = useState(false);
   const timerIntervalRef = useRef(null);
+  const timerNotificationTimerRef = useRef(null);
 
   // --- Multi-Selection States ---
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
@@ -815,6 +817,7 @@ export default function WorkflowApp() {
             clearInterval(timerIntervalRef.current);
             setTimerRunning(false);
             setTimerDone(true);
+            setTimerNotification(true);
             // Play a short beep using Web Audio API
             try {
               const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -837,6 +840,14 @@ export default function WorkflowApp() {
     }
     return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
   }, [timerRunning, timerPaused]);
+
+  // --- Timer Notification Auto-Dismiss ---
+  useEffect(() => {
+    if (timerNotification) {
+      timerNotificationTimerRef.current = setTimeout(() => setTimerNotification(false), 5000);
+    }
+    return () => { if (timerNotificationTimerRef.current) clearTimeout(timerNotificationTimerRef.current); };
+  }, [timerNotification]);
 
   // Keep projectsRef in sync with projects state for debounced localStorage writes
   useEffect(() => {
@@ -1418,6 +1429,20 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleReminderKey);
     return () => window.removeEventListener('keydown', handleReminderKey);
+  }, []);
+
+  // --- F key toggles timer panel ---
+  useEffect(() => {
+    const handleTimerKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setShowTimer(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleTimerKey);
+    return () => window.removeEventListener('keydown', handleTimerKey);
   }, []);
 
   // --- Reminder Scheduling Engine ---
@@ -5044,7 +5069,7 @@ export default function WorkflowApp() {
               <button
                 onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
                 className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}
-                title="Timer"
+                title="Timer (F)"
               >
                 <Timer className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -5720,10 +5745,43 @@ export default function WorkflowApp() {
       {/* --- Secret Project Panel --- */}
       {showProjectPanel && renderProjectPanel(false)}
 
+      {/* --- Timer Running Countdown (when panel closed) --- */}
+      {timerRunning && !showTimer && (
+        <div
+          className="fixed top-4 right-4 z-50 opacity-50 hover:opacity-90 transition-opacity cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2.5 py-1.5 flex items-center gap-1.5"
+          onClick={() => setShowTimer(true)}
+          title="Click to open timer"
+        >
+          <Timer className="w-3.5 h-3.5 text-indigo-600" />
+          <span className="text-sm font-mono font-semibold text-slate-700">
+            {(() => {
+              const minutes = Math.ceil(timerSeconds / 60);
+              return `${minutes.toString().padStart(2, '0')}m`;
+            })()}
+          </span>
+        </div>
+      )}
+
       {/* --- Toast Notification --- */}
       {toastMessage && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-full shadow-lg animate-in fade-in duration-200">
           {toastMessage}
+        </div>
+      )}
+
+      {/* --- Timer Complete Notification --- */}
+      {timerNotification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[90] animate-in slide-in-from-top fade-in duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-orange-200 px-4 py-3 flex items-center gap-3">
+            <span className="text-xl">⏰</span>
+            <span className="text-sm font-semibold text-orange-700">Timer Complete!</span>
+            <button
+              onClick={() => setTimerNotification(false)}
+              className="p-1 hover:bg-orange-100 rounded-lg text-orange-400 hover:text-orange-600 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
