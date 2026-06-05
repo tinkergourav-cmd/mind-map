@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-002",
+  "type": "refactor",
+  "description": "Refactor Pin Location system UI/UX: remove color picker, update icon list to 10 emojis, simplify pin rendering to icon-only with dark outline, fix z-index layering of edit popover, and simplify sidebar pin entries.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Update PinPanel.jsx: Remove PIN_COLORS export, update PIN_ICONS to the new 10-icon set, remove color picker from editing mode, remove colored dot from display mode (show only icon), update commitEdit to not pass color.",
+    "Step 2 - Update App.jsx pin rendering: Remove colored circle marker and triangle pointer, render pin as icon-only with dark outline/drop-shadow. Fix z-index of edit popover to z-[9999]. Remove color picker from edit popover. Update PIN_ICONS reference to use new icon set. Update addPin defaults to remove color reliance (keep field for backward compat). Change import to not import PIN_COLORS.",
+    "Step 3 - Verify build passes with npx vite build."
+  ],
+  "acceptance_criteria": [
+    "Running `npx vite build` succeeds without errors",
+    "Pin edit popover uses z-[9999] to render above all cards",
+    "No color picker UI in either PinPanel or canvas edit popover",
+    "Pin icons list contains all 10 specified emojis",
+    "Canvas pins render as icon-only with dark outline/shadow for visibility",
+    "Sidebar pin entries show only the icon (no colored dot)",
+    "Color field remains in data model for backward compatibility"
+  ],
+  "verification": [
+    "Run `cd /projects/sandbox/mind-map && npx vite build` and confirm it completes with exit code 0"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

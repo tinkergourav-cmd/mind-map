@@ -1,26 +1,17 @@
 import React, { useState } from 'react';
 import { X, MapPin, Eye, EyeOff, Search, ChevronDown, Trash2, Pencil } from 'lucide-react';
 
-const PIN_COLORS = [
-  { value: '#ef4444', label: 'Red' },
-  { value: '#3b82f6', label: 'Blue' },
-  { value: '#10b981', label: 'Green' },
-  { value: '#eab308', label: 'Yellow' },
-  { value: '#8b5cf6', label: 'Purple' },
-  { value: '#f97316', label: 'Orange' },
-  { value: '#14b8a6', label: 'Teal' },
-  { value: '#ec4899', label: 'Pink' },
-];
-
 const PIN_ICONS = [
-  { value: '\ud83d\udccc', label: 'Pin' },
-  { value: '\u2b50', label: 'Star' },
-  { value: '\u2705', label: 'Check' },
-  { value: '\ud83d\udca1', label: 'Lightbulb' },
-  { value: '\ud83d\udea9', label: 'Flag' },
-  { value: '\u2764\ufe0f', label: 'Heart' },
-  { value: '\ud83d\udd16', label: 'Bookmark' },
+  { value: '\u2b50', label: 'Important' },
+  { value: '\ud83d\udccc', label: 'Bookmark' },
+  { value: '\u2705', label: 'Completed' },
+  { value: '\ud83d\udca1', label: 'Idea' },
+  { value: '\ud83d\udea9', label: 'Priority' },
   { value: '\u26a0\ufe0f', label: 'Warning' },
+  { value: '\u2764\ufe0f', label: 'Personal' },
+  { value: '\ud83c\udfaf', label: 'Goal' },
+  { value: '\ud83d\udcd6', label: 'Learning' },
+  { value: '\ud83d\udd25', label: 'Urgent' },
 ];
 
 export default function PinPanel({
@@ -39,7 +30,6 @@ export default function PinPanel({
   const [editingPinId, setEditingPinId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [editingNote, setEditingNote] = useState('');
-  const [editingColor, setEditingColor] = useState('');
   const [editingIcon, setEditingIcon] = useState('');
 
   if (!showPanel) return null;
@@ -52,7 +42,6 @@ export default function PinPanel({
     setEditingPinId(pin.id);
     setEditingName(pin.name);
     setEditingNote(pin.note || '');
-    setEditingColor(pin.color);
     setEditingIcon(pin.icon);
   };
 
@@ -60,7 +49,6 @@ export default function PinPanel({
     onUpdatePin(pinId, {
       name: editingName.trim() || 'Unnamed Pin',
       note: editingNote,
-      color: editingColor,
       icon: editingIcon,
     }, workspaceId);
     setEditingPinId(null);
@@ -179,36 +167,31 @@ export default function PinPanel({
                         placeholder="Note (optional)"
                         rows={2}
                       />
-                      {/* Color picker */}
-                      <div className="flex items-center gap-1 mb-1.5">
-                        <span className="text-[10px] text-slate-500 font-medium mr-1">Color:</span>
-                        {PIN_COLORS.map(c => (
-                          <button
-                            key={c.value}
-                            onClick={() => setEditingColor(c.value)}
-                            className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 ${editingColor === c.value ? 'border-slate-700 scale-110' : 'border-white shadow-sm'}`}
-                            style={{ backgroundColor: c.value }}
-                            title={c.label}
-                          />
-                        ))}
-                      </div>
                       {/* Icon picker */}
-                      <div className="flex items-center gap-1 mb-2">
-                        <span className="text-[10px] text-slate-500 font-medium mr-1">Icon:</span>
-                        {PIN_ICONS.map(ic => (
-                          <button
-                            key={ic.value}
-                            onClick={() => setEditingIcon(ic.value)}
-                            className={`w-5 h-5 rounded flex items-center justify-center text-sm transition-all ${editingIcon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
-                            title={ic.label}
-                          >
-                            {ic.value}
-                          </button>
-                        ))}
+                      <div className="mb-2">
+                        <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {PIN_ICONS.map(ic => (
+                            <button
+                              key={ic.value}
+                              onClick={() => setEditingIcon(ic.value)}
+                              className={`w-6 h-6 rounded flex items-center justify-center text-sm transition-all ${editingIcon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
+                              title={ic.label}
+                            >
+                              {ic.value}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex gap-1.5">
                         <button onClick={() => commitEdit(pin.id, ws.id)} className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-semibold rounded transition-colors">Save</button>
                         <button onClick={cancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors">Cancel</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDeletePin(pin.id, ws.id); setEditingPinId(null); }}
+                          className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-semibold rounded transition-colors ml-auto"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ) : (
@@ -218,11 +201,8 @@ export default function PinPanel({
                       onClick={() => onNavigateToPin(pin.id, ws.id)}
                       title={pin.note || pin.name}
                     >
-                      {/* Color dot + icon */}
-                      <span
-                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                        style={{ backgroundColor: pin.color + '20', border: `2px solid ${pin.color}` }}
-                      >
+                      {/* Icon only */}
+                      <span className="w-5 h-5 flex items-center justify-center shrink-0 text-sm">
                         {pin.icon}
                       </span>
 
@@ -274,4 +254,4 @@ export default function PinPanel({
   );
 }
 
-export { PIN_COLORS, PIN_ICONS };
+export { PIN_ICONS };

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
-import PinPanel, { PIN_COLORS, PIN_ICONS } from './PinPanel';
+import PinPanel, { PIN_ICONS } from './PinPanel';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -4672,27 +4672,21 @@ export default function WorkflowApp() {
                 style={{
                   left: pin.canvas_position_x,
                   top: pin.canvas_position_y,
-                  transform: `translate(-50%, -100%) scale(${1 / transform.scale})`,
-                  transformOrigin: 'bottom center',
+                  transform: `translate(-50%, -50%) scale(${1 / transform.scale})`,
+                  transformOrigin: 'center center',
                 }}
                 onMouseEnter={() => setHoveredPinId(pin.id)}
                 onMouseLeave={() => setHoveredPinId(null)}
                 onClick={(e) => { e.stopPropagation(); setEditingPinOnCanvas(editingPinOnCanvas === pin.id ? null : pin.id); }}
               >
-                {/* Pin marker */}
-                <div
-                  className="relative flex flex-col items-center"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
-                    style={{ backgroundColor: pin.color }}
+                {/* Pin icon with dark outline */}
+                <div className="relative flex items-center justify-center">
+                  <span
+                    className="text-2xl select-none"
+                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5)) drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
                   >
-                    <span className="text-sm">{pin.icon}</span>
-                  </div>
-                  <div
-                    className="w-0 h-0 -mt-0.5"
-                    style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: `8px solid ${pin.color}` }}
-                  />
+                    {pin.icon}
+                  </span>
                 </div>
 
                 {/* Tooltip on hover */}
@@ -4706,7 +4700,7 @@ export default function WorkflowApp() {
                 {/* Edit popover on click */}
                 {editingPinOnCanvas === pin.id && (
                   <div
-                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl p-3 min-w-[220px] z-[200]"
+                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl p-3 min-w-[220px] z-[9999]"
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                   >
@@ -4724,28 +4718,20 @@ export default function WorkflowApp() {
                       placeholder="Note (optional)"
                       rows={2}
                     />
-                    <div className="flex items-center gap-1 mb-2">
-                      {PIN_COLORS.map(c => (
-                        <button
-                          key={c.value}
-                          onClick={() => updatePin(pin.id, { color: c.value })}
-                          className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 ${pin.color === c.value ? 'border-slate-700 scale-110' : 'border-white shadow-sm'}`}
-                          style={{ backgroundColor: c.value }}
-                          title={c.label}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
-                      {PIN_ICONS.map(ic => (
-                        <button
-                          key={ic.value}
-                          onClick={() => updatePin(pin.id, { icon: ic.value })}
-                          className={`w-5 h-5 rounded flex items-center justify-center text-sm ${pin.icon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
-                          title={ic.label}
-                        >
-                          {ic.value}
-                        </button>
-                      ))}
+                    <div className="mb-2">
+                      <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {PIN_ICONS.map(ic => (
+                          <button
+                            key={ic.value}
+                            onClick={() => updatePin(pin.id, { icon: ic.value })}
+                            className={`w-6 h-6 rounded flex items-center justify-center text-sm ${pin.icon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
+                            title={ic.label}
+                          >
+                            {ic.value}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <button
@@ -4756,9 +4742,9 @@ export default function WorkflowApp() {
                       </button>
                       <button
                         onClick={() => setEditingPinOnCanvas(null)}
-                        className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
+                        className="px-2.5 py-1 text-[10px] font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded transition-colors"
                       >
-                        Done
+                        Save
                       </button>
                     </div>
                   </div>
