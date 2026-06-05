@@ -31,6 +31,7 @@ export default function MiniMap({
   nodes,
   groups,
   images,
+  pins,
   transform,
   setTransform,
   workspaceRef,
@@ -85,6 +86,14 @@ export default function MiniMap({
       maxY = Math.max(maxY, img.y + (img.height || 180));
     });
 
+    (pins || []).forEach(pin => {
+      hasContent = true;
+      minX = Math.min(minX, pin.canvas_position_x);
+      minY = Math.min(minY, pin.canvas_position_y);
+      maxX = Math.max(maxX, pin.canvas_position_x);
+      maxY = Math.max(maxY, pin.canvas_position_y);
+    });
+
     if (!hasContent) {
       return { minX: -500, minY: -500, maxX: 500, maxY: 500 };
     }
@@ -96,7 +105,7 @@ export default function MiniMap({
       maxX: maxX + PADDING,
       maxY: maxY + PADDING,
     };
-  }, [nodes, groups, images]);
+  }, [nodes, groups, images, pins]);
 
   // Convert world coordinates to minimap coordinates
   const worldToMiniMap = useCallback((worldX, worldY, bounds) => {
@@ -382,6 +391,25 @@ export default function MiniMap({
               height: Math.max(2, endPos.y - pos.y),
               backgroundColor: '#94a3b8',
               opacity: 0.6,
+            }}
+          />
+        );
+      })}
+
+      {/* Render pins */}
+      {(pins || []).map(pin => {
+        const pos = worldToMiniMap(pin.canvas_position_x, pin.canvas_position_y, bounds);
+        return (
+          <div
+            key={`pin-${pin.id}`}
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              left: pos.x - 2,
+              top: pos.y - 2,
+              width: 4,
+              height: 4,
+              backgroundColor: pin.color,
+              boxShadow: `0 0 2px ${pin.color}`,
             }}
           />
         );
