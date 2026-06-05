@@ -425,6 +425,8 @@ export default function WorkflowApp() {
   const [sessionStartTime] = useState(Date.now());
   const reminderCheckIntervalRef = useRef(null);
   const reminderNotificationTimerRef = useRef(null);
+  const lastSessionNotifiedAtRef = useRef(Date.now());
+  const reminderNotificationRef = useRef(null);
 
   // --- Timer States ---
   const [showTimer, setShowTimer] = useState(false);
@@ -1433,6 +1435,9 @@ export default function WorkflowApp() {
     reminderCheckIntervalRef.current = setInterval(() => {
       const now = Date.now();
 
+      // Skip if a notification is already being displayed
+      if (reminderNotificationRef.current) return;
+
       setReminders(prev => {
         let fired = false;
         let firedReminder = null;
@@ -1449,7 +1454,12 @@ export default function WorkflowApp() {
             const [endH, endM] = r.activeHours.end.split(':').map(Number);
             const startMinutes = startH * 60 + startM;
             const endMinutes = endH * 60 + endM;
-            if (currentMinutes < startMinutes || currentMinutes > endMinutes) return r;
+            if (startMinutes > endMinutes) {
+              // Overnight range (e.g., 22:00-06:00): block only if between end and start
+              if (currentMinutes < startMinutes && currentMinutes > endMinutes) return r;
+            } else {
+              if (currentMinutes < startMinutes || currentMinutes > endMinutes) return r;
+            }
           }
 
           if (now >= r.nextReminderAt) {
@@ -1470,8 +1480,9 @@ export default function WorkflowApp() {
       });
 
       // Long session detection (every 60 minutes)
-      const sessionMinutes = Math.floor((now - sessionStartTime) / 60000);
-      if (sessionMinutes > 0 && sessionMinutes % 60 === 0) {
+      if (now - lastSessionNotifiedAtRef.current >= 3600000) {
+        lastSessionNotifiedAtRef.current = now;
+        const sessionMinutes = Math.floor((now - sessionStartTime) / 60000);
         setTimeout(() => {
           setReminderNotification({
             id: 'session-' + sessionMinutes,
@@ -1488,6 +1499,7 @@ export default function WorkflowApp() {
 
   // --- Reminder Notification Auto-Dismiss ---
   useEffect(() => {
+    reminderNotificationRef.current = reminderNotification;
     if (reminderNotification) {
       if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current);
       reminderNotificationTimerRef.current = setTimeout(() => {
@@ -5493,7 +5505,7 @@ export default function WorkflowApp() {
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              URL.revokeObjectURL(url);
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
             }}
             onEnableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: true, nextReminderAt: Date.now() + r.frequency * 60000 }))); }}
             onDisableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: false, nextReminderAt: null }))); }}

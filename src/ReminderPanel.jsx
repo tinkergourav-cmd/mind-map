@@ -57,6 +57,140 @@ export default function ReminderPanel({
 
   if (!showPanel) return null;
 
+  const EditForm = ({ isNew }) => (
+    <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
+      <input
+        type="text"
+        value={editForm.title}
+        onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+        className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+        placeholder="Reminder title"
+        autoFocus
+      />
+      <textarea
+        value={editForm.content}
+        onChange={(e) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
+        className="w-full text-[11px] bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-600 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
+        placeholder="Message/content"
+        rows={2}
+      />
+      {/* Icon picker */}
+      <div className="mb-2">
+        <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
+        <div className="flex items-center gap-1 flex-wrap">
+          {REMINDER_ICONS.map(ic => (
+            <button
+              key={ic.value}
+              onClick={() => setEditForm(prev => ({ ...prev, icon: ic.value }))}
+              className={`w-6 h-6 rounded flex items-center justify-center text-sm transition-all ${editForm.icon === ic.value ? 'bg-indigo-100 ring-1 ring-indigo-400' : 'hover:bg-slate-100'}`}
+              title={ic.label}
+            >
+              {ic.value}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Frequency */}
+      <div className="mb-2">
+        <span className="text-[10px] text-slate-500 font-medium block mb-1">Frequency:</span>
+        <select
+          value={editForm.frequency}
+          onChange={(e) => {
+            const val = e.target.value === 'custom' ? 'custom' : parseInt(e.target.value, 10);
+            setEditForm(prev => ({ ...prev, frequency: val }));
+          }}
+          className="text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+        >
+          {FREQUENCY_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {editForm.frequency === 'custom' && (
+          <input
+            type="number"
+            min="1"
+            value={customFreqInput}
+            onChange={(e) => setCustomFreqInput(e.target.value)}
+            className="ml-2 w-16 text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            placeholder="min"
+          />
+        )}
+      </div>
+      {/* Toggles */}
+      <div className="space-y-1.5 mb-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={editForm.showOnWorkspaceOpen}
+            onChange={(e) => setEditForm(prev => ({ ...prev, showOnWorkspaceOpen: e.target.checked }))}
+            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
+          />
+          <span className="text-[11px] text-slate-600">Show on workspace open</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={editForm.randomMode}
+            onChange={(e) => setEditForm(prev => ({ ...prev, randomMode: e.target.checked }))}
+            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
+          />
+          <span className="text-[11px] text-slate-600">Participate in random reminders</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={editForm.enabled}
+            onChange={(e) => setEditForm(prev => ({ ...prev, enabled: e.target.checked }))}
+            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
+          />
+          <span className="text-[11px] text-slate-600">Enabled</span>
+        </label>
+      </div>
+      {/* Active Hours */}
+      <div className="mb-2">
+        <label className="flex items-center gap-2 cursor-pointer mb-1">
+          <input
+            type="checkbox"
+            checked={!!editForm.activeHours}
+            onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: e.target.checked ? { start: '09:00', end: '17:00' } : null }))}
+            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
+          />
+          <span className="text-[11px] text-slate-600">Active hours only</span>
+        </label>
+        {editForm.activeHours && (
+          <div className="flex items-center gap-1 ml-5">
+            <input
+              type="time"
+              value={editForm.activeHours.start}
+              onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: { ...prev.activeHours, start: e.target.value } }))}
+              className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            />
+            <span className="text-[10px] text-slate-400">to</span>
+            <input
+              type="time"
+              value={editForm.activeHours.end}
+              onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: { ...prev.activeHours, end: e.target.value } }))}
+              className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            />
+          </div>
+        )}
+      </div>
+      {/* Actions */}
+      <div className="flex gap-1.5">
+        <button onClick={saveEdit} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-semibold rounded transition-colors">Save</button>
+        <button onClick={cancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors">Cancel</button>
+        {!isNew && (
+          <button
+            onClick={() => { onDeleteReminder(editingId); setEditingId(null); }}
+            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-semibold rounded transition-colors ml-auto"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   const filteredReminders = reminders.filter(r => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -122,7 +256,10 @@ export default function ReminderPanel({
       try {
         const data = JSON.parse(ev.target.result);
         if (data.type === 'thoughtflow-reminder-collection' && Array.isArray(data.reminders)) {
-          onImportReminders(data.reminders);
+          const validReminders = data.reminders
+            .filter(r => typeof r.title === 'string' && typeof r.frequency === 'number' && r.frequency > 0)
+            .map(({ lastShownAt, nextReminderAt, ...rest }) => rest);
+          onImportReminders(validReminders);
         }
       } catch (err) {
         // Invalid file
@@ -199,137 +336,7 @@ export default function ReminderPanel({
           <div key={reminder.id}>
             {editingId === reminder.id ? (
               /* Editing Mode */
-              <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                  placeholder="Reminder title"
-                  autoFocus
-                />
-                <textarea
-                  value={editForm.content}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
-                  className="w-full text-[11px] bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-600 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                  placeholder="Message/content"
-                  rows={2}
-                />
-                {/* Icon picker */}
-                <div className="mb-2">
-                  <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {REMINDER_ICONS.map(ic => (
-                      <button
-                        key={ic.value}
-                        onClick={() => setEditForm(prev => ({ ...prev, icon: ic.value }))}
-                        className={`w-6 h-6 rounded flex items-center justify-center text-sm transition-all ${editForm.icon === ic.value ? 'bg-indigo-100 ring-1 ring-indigo-400' : 'hover:bg-slate-100'}`}
-                        title={ic.label}
-                      >
-                        {ic.value}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Frequency */}
-                <div className="mb-2">
-                  <span className="text-[10px] text-slate-500 font-medium block mb-1">Frequency:</span>
-                  <select
-                    value={editForm.frequency}
-                    onChange={(e) => {
-                      const val = e.target.value === 'custom' ? 'custom' : parseInt(e.target.value, 10);
-                      setEditForm(prev => ({ ...prev, frequency: val }));
-                    }}
-                    className="text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                  >
-                    {FREQUENCY_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  {editForm.frequency === 'custom' && (
-                    <input
-                      type="number"
-                      min="1"
-                      value={customFreqInput}
-                      onChange={(e) => setCustomFreqInput(e.target.value)}
-                      className="ml-2 w-16 text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                      placeholder="min"
-                    />
-                  )}
-                </div>
-                {/* Toggles */}
-                <div className="space-y-1.5 mb-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editForm.showOnWorkspaceOpen}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, showOnWorkspaceOpen: e.target.checked }))}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                    />
-                    <span className="text-[11px] text-slate-600">Show on workspace open</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editForm.randomMode}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, randomMode: e.target.checked }))}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                    />
-                    <span className="text-[11px] text-slate-600">Participate in random reminders</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editForm.enabled}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, enabled: e.target.checked }))}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                    />
-                    <span className="text-[11px] text-slate-600">Enabled</span>
-                  </label>
-                </div>
-                {/* Active Hours */}
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 cursor-pointer mb-1">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.activeHours}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: e.target.checked ? { start: '09:00', end: '17:00' } : null }))}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                    />
-                    <span className="text-[11px] text-slate-600">Active hours only</span>
-                  </label>
-                  {editForm.activeHours && (
-                    <div className="flex items-center gap-1 ml-5">
-                      <input
-                        type="time"
-                        value={editForm.activeHours.start}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: { ...prev.activeHours, start: e.target.value } }))}
-                        className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                      />
-                      <span className="text-[10px] text-slate-400">to</span>
-                      <input
-                        type="time"
-                        value={editForm.activeHours.end}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: { ...prev.activeHours, end: e.target.value } }))}
-                        className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                      />
-                    </div>
-                  )}
-                </div>
-                {/* Actions */}
-                <div className="flex gap-1.5">
-                  <button onClick={saveEdit} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-semibold rounded transition-colors">Save</button>
-                  <button onClick={cancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors">Cancel</button>
-                  {editingId !== 'new' && (
-                    <button
-                      onClick={() => { onDeleteReminder(editingId); setEditingId(null); }}
-                      className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-semibold rounded transition-colors ml-auto"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </div>
+              <EditForm isNew={false} />
             ) : (
               /* Display Mode */
               <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 group transition-colors border-b border-slate-50">
@@ -381,129 +388,7 @@ export default function ReminderPanel({
 
         {/* New Reminder Inline Form */}
         {editingId === 'new' && (
-          <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
-            <input
-              type="text"
-              value={editForm.title}
-              onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-              placeholder="Reminder title"
-              autoFocus
-            />
-            <textarea
-              value={editForm.content}
-              onChange={(e) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
-              className="w-full text-[11px] bg-white border border-slate-200 rounded px-2 py-1 mb-1.5 text-slate-600 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
-              placeholder="Message/content"
-              rows={2}
-            />
-            {/* Icon picker */}
-            <div className="mb-2">
-              <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
-              <div className="flex items-center gap-1 flex-wrap">
-                {REMINDER_ICONS.map(ic => (
-                  <button
-                    key={ic.value}
-                    onClick={() => setEditForm(prev => ({ ...prev, icon: ic.value }))}
-                    className={`w-6 h-6 rounded flex items-center justify-center text-sm transition-all ${editForm.icon === ic.value ? 'bg-indigo-100 ring-1 ring-indigo-400' : 'hover:bg-slate-100'}`}
-                    title={ic.label}
-                  >
-                    {ic.value}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Frequency */}
-            <div className="mb-2">
-              <span className="text-[10px] text-slate-500 font-medium block mb-1">Frequency:</span>
-              <select
-                value={editForm.frequency}
-                onChange={(e) => {
-                  const val = e.target.value === 'custom' ? 'custom' : parseInt(e.target.value, 10);
-                  setEditForm(prev => ({ ...prev, frequency: val }));
-                }}
-                className="text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-              >
-                {FREQUENCY_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              {editForm.frequency === 'custom' && (
-                <input
-                  type="number"
-                  min="1"
-                  value={customFreqInput}
-                  onChange={(e) => setCustomFreqInput(e.target.value)}
-                  className="ml-2 w-16 text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                  placeholder="min"
-                />
-              )}
-            </div>
-            {/* Toggles */}
-            <div className="space-y-1.5 mb-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editForm.showOnWorkspaceOpen}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, showOnWorkspaceOpen: e.target.checked }))}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                />
-                <span className="text-[11px] text-slate-600">Show on workspace open</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editForm.randomMode}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, randomMode: e.target.checked }))}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                />
-                <span className="text-[11px] text-slate-600">Participate in random reminders</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editForm.enabled}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, enabled: e.target.checked }))}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                />
-                <span className="text-[11px] text-slate-600">Enabled</span>
-              </label>
-            </div>
-            {/* Active Hours */}
-            <div className="mb-2">
-              <label className="flex items-center gap-2 cursor-pointer mb-1">
-                <input
-                  type="checkbox"
-                  checked={!!editForm.activeHours}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: e.target.checked ? { start: '09:00', end: '17:00' } : null }))}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-300 w-3.5 h-3.5"
-                />
-                <span className="text-[11px] text-slate-600">Active hours only</span>
-              </label>
-              {editForm.activeHours && (
-                <div className="flex items-center gap-1 ml-5">
-                  <input
-                    type="time"
-                    value={editForm.activeHours.start}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: { ...prev.activeHours, start: e.target.value } }))}
-                    className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                  />
-                  <span className="text-[10px] text-slate-400">to</span>
-                  <input
-                    type="time"
-                    value={editForm.activeHours.end}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, activeHours: { ...prev.activeHours, end: e.target.value } }))}
-                    className="text-[11px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                  />
-                </div>
-              )}
-            </div>
-            {/* Actions */}
-            <div className="flex gap-1.5">
-              <button onClick={saveEdit} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-semibold rounded transition-colors">Save</button>
-              <button onClick={cancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors">Cancel</button>
-            </div>
-          </div>
+          <EditForm isNew={true} />
         )}
       </div>
 
