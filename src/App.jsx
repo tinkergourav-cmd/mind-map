@@ -398,6 +398,11 @@ export default function WorkflowApp() {
   const [focusedPinId, setFocusedPinId] = useState(null);
   const [editingPinOnCanvas, setEditingPinOnCanvas] = useState(null);
   const [hoveredPinId, setHoveredPinId] = useState(null);
+  const [selectedPinId, setSelectedPinId] = useState(null);
+  const [draggingPin, setDraggingPin] = useState(null);
+  const [pinsVisible, setPinsVisible] = useState(true);
+  const lastPKeyTimeRef = useRef(0);
+  const pinDraggedRef = useRef(false);
 
   // --- Timer States ---
   const [showTimer, setShowTimer] = useState(false);
@@ -1328,10 +1333,10 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleTaskKey);
   }, [focusedNodeId]);
 
-  // --- P key toggles pin panel, Shift+P drops pin at viewport center ---
+  // --- P key toggles pin visibility, PP (double-press) toggles pin panel, Shift+P drops pin at viewport center ---
   useEffect(() => {
     const handlePinKey = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === 'P' && e.shiftKey) {
         e.preventDefault();
@@ -1344,7 +1349,20 @@ export default function WorkflowApp() {
       }
       if ((e.key === 'p' || e.key === 'P') && !e.shiftKey) {
         e.preventDefault();
-        setShowPinPanel(prev => !prev);
+        const now = Date.now();
+        const timeSinceLast = now - lastPKeyTimeRef.current;
+        lastPKeyTimeRef.current = now;
+        if (timeSinceLast < 300) {
+          // Double-press P: toggle pin panel
+          setShowPinPanel(prev => !prev);
+        } else {
+          // Single press P: toggle pin visibility (delayed to allow double-press detection)
+          setTimeout(() => {
+            if (Date.now() - lastPKeyTimeRef.current >= 280) {
+              setPinsVisible(prev => !prev);
+            }
+          }, 300);
+        }
       }
     };
     window.addEventListener('keydown', handlePinKey);
@@ -2330,6 +2348,7 @@ export default function WorkflowApp() {
     setFocusedNodeId(null);
     setFocusedGroupId(null);
     setEditingPinOnCanvas(null);
+    setSelectedPinId(null);
 
     const isClickBg = e.target === workspaceRef.current || e.target.classList.contains('canvas-grid-clickable');
     if (isClickBg) {
@@ -2454,8 +2473,16 @@ export default function WorkflowApp() {
         currentX: draggingImage.initialX + dx,
         currentY: draggingImage.initialY + dy
       }));
+    } else if (draggingPin) {
+      const dx = (e.clientX - draggingPin.startX) / transform.scale;
+      const dy = (e.clientY - draggingPin.startY) / transform.scale;
+      setDraggingPin(prev => ({
+        ...prev,
+        currentX: draggingPin.initialX + dx,
+        currentY: draggingPin.initialY + dy
+      }));
     }
-  }, [draggingNode, draggingGroup, draggingImage, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
 
 
   const handlePointerUp = useCallback(() => {
@@ -2627,6 +2654,15 @@ export default function WorkflowApp() {
       }
     }
 
+    if (draggingPin) {
+      if (draggingPin.currentX !== draggingPin.initialX || draggingPin.currentY !== draggingPin.initialY) {
+        pinDraggedRef.current = true;
+        updateActiveWorkspace(ws => ({
+          pins: (ws.pins || []).map(p => p.id === draggingPin.id ? { ...p, canvas_position_x: draggingPin.currentX, canvas_position_y: draggingPin.currentY } : p)
+        }));
+      }
+    }
+
     setDraggingNode(null);
     draggingNodeRef.current = null;
     setDraggingGroup(null);
@@ -2636,8 +2672,9 @@ export default function WorkflowApp() {
     setConnectHoverNodeId(null);
     setIsPanning(false);
     setDraggingImage(null);
+    setDraggingPin(null);
     dragSnapshot.current = null;
-  }, [draggingNode, draggingGroup, draggingImage, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
 
 
   // --- Node, Edge, and Group Creators ---
@@ -4665,20 +4702,53 @@ export default function WorkflowApp() {
             })}
 
             {/* --- Pins Layer --- */}
-            {(activeWs?.pins || []).filter(p => p.visibility_status).map(pin => (
+            {pinsVisible && (activeWs?.pins || []).filter(p => p.visibility_status).map(pin => {
+              const isDraggingThis = draggingPin && draggingPin.id === pin.id;
+              const displayX = isDraggingThis ? draggingPin.currentX : pin.canvas_position_x;
+              const displayY = isDraggingThis ? draggingPin.currentY : pin.canvas_position_y;
+              return (
               <div
                 key={pin.id}
-                className={`absolute pointer-events-auto cursor-pointer z-[55] ${focusedPinId === pin.id ? 'animate-bounce' : ''}`}
+                className={`absolute pointer-events-auto z-[55] ${focusedPinId === pin.id ? 'animate-bounce' : ''} ${isDraggingThis ? 'cursor-grabbing' : 'cursor-pointer'}`}
                 style={{
-                  left: pin.canvas_position_x,
-                  top: pin.canvas_position_y,
+                  left: displayX,
+                  top: displayY,
                   transform: `translate(-50%, -50%) scale(${1 / transform.scale})`,
                   transformOrigin: 'center center',
                 }}
                 onMouseEnter={() => setHoveredPinId(pin.id)}
                 onMouseLeave={() => setHoveredPinId(null)}
-                onClick={(e) => { e.stopPropagation(); setEditingPinOnCanvas(editingPinOnCanvas === pin.id ? null : pin.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (pinDraggedRef.current) { pinDraggedRef.current = false; return; }
+                  setSelectedPinId(selectedPinId === pin.id ? null : pin.id);
+                  setEditingPinOnCanvas(null);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  if (pinDraggedRef.current) { pinDraggedRef.current = false; return; }
+                  setEditingPinOnCanvas(editingPinOnCanvas === pin.id ? null : pin.id);
+                  setSelectedPinId(pin.id);
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.button !== 0) return;
+                  setDraggingPin({
+                    id: pin.id,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    initialX: pin.canvas_position_x,
+                    initialY: pin.canvas_position_y,
+                    currentX: pin.canvas_position_x,
+                    currentY: pin.canvas_position_y
+                  });
+                }}
+                onGotPointerCapture={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); }}
               >
+                {/* Selection ring */}
+                {(selectedPinId === pin.id || editingPinOnCanvas === pin.id) && (
+                  <div className="absolute inset-0 -m-1 rounded-full ring-2 ring-rose-400 ring-offset-1 pointer-events-none" />
+                )}
                 {/* Pin icon with dark outline */}
                 <div className="relative flex items-center justify-center">
                   <span
@@ -4690,67 +4760,15 @@ export default function WorkflowApp() {
                 </div>
 
                 {/* Tooltip on hover */}
-                {hoveredPinId === pin.id && editingPinOnCanvas !== pin.id && (
+                {hoveredPinId === pin.id && editingPinOnCanvas !== pin.id && !isDraggingThis && (
                   <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 bg-slate-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap max-w-[150px] truncate pointer-events-none z-[100]">
                     <div className="font-semibold">{pin.name}</div>
                     {pin.note && <div className="text-slate-300 truncate">{pin.note}</div>}
                   </div>
                 )}
-
-                {/* Edit popover on click */}
-                {editingPinOnCanvas === pin.id && (
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl p-3 min-w-[220px] z-[9999]"
-                    onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="text"
-                      value={pin.name}
-                      onChange={(e) => updatePin(pin.id, { name: e.target.value })}
-                      className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-rose-300"
-                      placeholder="Pin name"
-                    />
-                    <textarea
-                      value={pin.note || ''}
-                      onChange={(e) => updatePin(pin.id, { note: e.target.value })}
-                      className="w-full text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-2 text-slate-600 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-rose-300"
-                      placeholder="Note (optional)"
-                      rows={2}
-                    />
-                    <div className="mb-2">
-                      <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {PIN_ICONS.map(ic => (
-                          <button
-                            key={ic.value}
-                            onClick={() => updatePin(pin.id, { icon: ic.value })}
-                            className={`w-6 h-6 rounded flex items-center justify-center text-sm ${pin.icon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
-                            title={ic.label}
-                          >
-                            {ic.value}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <button
-                        onClick={() => { deletePin(pin.id); setEditingPinOnCanvas(null); }}
-                        className="px-2 py-1 text-[10px] font-semibold text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => setEditingPinOnCanvas(null)}
-                        className="px-2.5 py-1 text-[10px] font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded transition-colors"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-            ))}
+              );
+            })}
 
             {/* --- Selection Box --- */}
             {selectionBox && (
@@ -4772,7 +4790,7 @@ export default function WorkflowApp() {
             nodes={nodes}
             groups={groups}
             images={activeWs?.images || []}
-            pins={(activeWs?.pins || []).filter(p => p.visibility_status)}
+            pins={pinsVisible ? (activeWs?.pins || []).filter(p => p.visibility_status) : []}
             transform={transform}
             setTransform={setTransform}
             workspaceRef={workspaceRef}
@@ -5036,6 +5054,73 @@ export default function WorkflowApp() {
               </button>
             </div>
           )}
+
+          {/* --- Pin Edit Popover (rendered outside transform layer for z-index) --- */}
+          {editingPinOnCanvas && (() => {
+            const pin = (activeWs?.pins || []).find(p => p.id === editingPinOnCanvas);
+            if (!pin || !workspaceRef.current) return null;
+            const rect = workspaceRef.current.getBoundingClientRect();
+            const screenX = pin.canvas_position_x * transform.scale + transform.x;
+            const screenY = pin.canvas_position_y * transform.scale + transform.y;
+            // Position popover below the pin
+            const popoverLeft = Math.min(Math.max(screenX, 120), rect.width - 120);
+            const popoverTop = screenY + 24;
+            return (
+              <div
+                className="absolute inset-0 z-[10000]"
+                onClick={() => setEditingPinOnCanvas(null)}
+                onPointerDown={(e) => { if (e.target === e.currentTarget) setEditingPinOnCanvas(null); }}
+              >
+                <div
+                  className="absolute bg-white border border-slate-200 rounded-xl shadow-2xl p-3 min-w-[220px]"
+                  style={{ left: popoverLeft, top: popoverTop, transform: 'translateX(-50%)' }}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="text"
+                    value={pin.name}
+                    onChange={(e) => updatePin(pin.id, { name: e.target.value })}
+                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-rose-300"
+                    placeholder="Pin name"
+                    autoFocus
+                  />
+                  <textarea
+                    value={pin.note || ''}
+                    onChange={(e) => updatePin(pin.id, { note: e.target.value })}
+                    className="w-full text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-2 text-slate-600 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-rose-300"
+                    placeholder="Note (optional)"
+                    rows={2}
+                  />
+                  <div className="mb-2">
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">Icon:</span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {PIN_ICONS.map(ic => (
+                        <button
+                          key={ic.value}
+                          onClick={() => updatePin(pin.id, { icon: ic.value })}
+                          className={`w-6 h-6 rounded flex items-center justify-center text-sm ${pin.icon === ic.value ? 'bg-slate-200 ring-1 ring-slate-400' : 'hover:bg-slate-100'}`}
+                          title={ic.label}
+                        >
+                          {ic.value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end pt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => { deletePin(pin.id); setEditingPinOnCanvas(null); setSelectedPinId(null); }}
+                      className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-red-500 rounded transition-colors"
+                      title="Delete pin"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </main>
 
         {/* --- Clone Panels (Three-Panel Split View) --- */}
