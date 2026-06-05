@@ -421,7 +421,7 @@ export default function WorkflowApp() {
   // --- Reminder & Wellness System States ---
   const [reminders, setReminders] = useState([]);
   const [showReminderPanel, setShowReminderPanel] = useState(false);
-  const [reminderNotification, setReminderNotification] = useState(null);
+  const [reminderNotificationQueue, setReminderNotificationQueue] = useState([]);
   const [sessionStartTime] = useState(Date.now());
   const reminderCheckIntervalRef = useRef(null);
   const reminderNotificationTimerRef = useRef(null);
@@ -702,7 +702,7 @@ export default function WorkflowApp() {
               const openReminders = loadedReminders.filter(r => r.enabled && r.showOnWorkspaceOpen);
               if (openReminders.length > 0) {
                 const picked = openReminders[Math.floor(Math.random() * openReminders.length)];
-                setReminderNotification({ id: picked.id, icon: picked.icon, title: 'Welcome Back', content: picked.content });
+                setReminderNotificationQueue(q => [...q, { id: picked.id, icon: picked.icon, title: 'Welcome Back', content: picked.content }]);
               }
             }, 1500);
             
@@ -1441,11 +1441,9 @@ export default function WorkflowApp() {
       let firedThisTick = false;
 
       setReminders(prev => {
-        let fired = false;
-        let firedReminder = null;
-
+        const firedReminders = [];
         const updated = prev.map(r => {
-          if (!r.enabled || fired) return r;
+          if (!r.enabled) return r;
           if (!r.nextReminderAt) return r;
 
           // Check active hours
@@ -1465,21 +1463,21 @@ export default function WorkflowApp() {
           }
 
           if (now >= r.nextReminderAt) {
-            fired = true;
-            firedReminder = r;
+            firedReminders.push(r);
             return { ...r, lastShownAt: now, nextReminderAt: now + r.frequency * 60000 };
           }
           return r;
         });
 
-        if (firedReminder) {
+        if (firedReminders.length > 0) {
           firedThisTick = true;
           setTimeout(() => {
-            setReminderNotification({ id: firedReminder.id, icon: firedReminder.icon, title: firedReminder.title, content: firedReminder.content });
+            const notifications = firedReminders.map(r => ({ id: r.id, icon: r.icon, title: r.title, content: r.content }));
+            setReminderNotificationQueue(q => [...q, ...notifications]);
           }, 0);
         }
 
-        return fired ? updated : prev;
+        return firedReminders.length > 0 ? updated : prev;
       });
 
       // Long session detection (every 60 minutes) - skip if already fired a reminder this tick
@@ -1487,12 +1485,12 @@ export default function WorkflowApp() {
         lastSessionNotifiedAtRef.current = now;
         const sessionMinutes = Math.floor((now - sessionStartTime) / 60000);
         setTimeout(() => {
-          setReminderNotification({
+          setReminderNotificationQueue(q => [...q, {
             id: 'session-' + sessionMinutes,
             icon: '\u23F0',
             title: 'Long Session Detected',
             content: `You have been working for ${sessionMinutes} minutes. Consider taking a short break.`
-          });
+          }]);
         }, 0);
       }
     }, 60000);
@@ -1500,17 +1498,23 @@ export default function WorkflowApp() {
     return () => { if (reminderCheckIntervalRef.current) clearInterval(reminderCheckIntervalRef.current); };
   }, [initialized, sessionStartTime]);
 
-  // --- Reminder Notification Auto-Dismiss ---
+  // --- Reminder Notification Queue Consumer & Auto-Dismiss ---
+  const activeReminderNotification = reminderNotificationQueue.length > 0 ? reminderNotificationQueue[0] : null;
+
+  const dismissReminderNotification = useCallback(() => {
+    setReminderNotificationQueue(q => q.slice(1));
+  }, []);
+
   useEffect(() => {
-    reminderNotificationRef.current = reminderNotification;
-    if (reminderNotification) {
+    reminderNotificationRef.current = activeReminderNotification;
+    if (activeReminderNotification) {
       if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current);
       reminderNotificationTimerRef.current = setTimeout(() => {
-        setReminderNotification(null);
+        dismissReminderNotification();
       }, 8000);
     }
     return () => { if (reminderNotificationTimerRef.current) clearTimeout(reminderNotificationTimerRef.current); };
-  }, [reminderNotification]);
+  }, [activeReminderNotification, dismissReminderNotification]);
 
   // --- S key toggles sidebar ---
   useEffect(() => {
@@ -5700,16 +5704,16 @@ export default function WorkflowApp() {
       )}
 
       {/* --- Reminder Notification Toast --- */}
-      {reminderNotification && (
+      {activeReminderNotification && (
         <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[85] animate-in slide-in-from-bottom fade-in duration-300 max-w-sm w-full mx-4">
           <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200 px-4 py-3 flex items-start gap-3">
-            <span className="text-2xl shrink-0">{reminderNotification.icon}</span>
+            <span className="text-2xl shrink-0">{activeReminderNotification.icon}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800">{reminderNotification.title}</p>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{reminderNotification.content}</p>
+              <p className="text-sm font-semibold text-slate-800">{activeReminderNotification.title}</p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{activeReminderNotification.content}</p>
             </div>
             <button
-              onClick={() => setReminderNotification(null)}
+              onClick={dismissReminderNotification}
               className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors shrink-0"
             >
               <X className="w-4 h-4" />
