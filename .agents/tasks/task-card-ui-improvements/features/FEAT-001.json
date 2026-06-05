@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Implement dynamic card height and title 2-line truncation across all card types: canvas cards, outline cards, and mobile sheet.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Canvas cards in App.jsx: Remove min-h-[3rem] from the content area when node.content is empty. Only render the content div if the node has content or is being edited.",
+    "Step 2 - Title in canvas cards: Change from single-line input to a container that supports max 2 lines with ellipsis overflow truncation.",
+    "Step 3 - Verify build passes."
+  ],
+  "acceptance_criteria": [
+    "Cards without content/description automatically reduce their height",
+    "Empty description area is not rendered (no empty space)",
+    "Long titles display max 2 lines with ellipsis truncation",
+    "Card height adjusts correctly for 1-line and 2-line titles",
+    "npm run build passes without errors"
+  ],
+  "verification": [
+    "Run `cd /projects/sandbox/mind-map && npm run build` and confirm it completes with exit code 0"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

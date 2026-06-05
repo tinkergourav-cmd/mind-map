@@ -1,0 +1,7 @@
+{
+  "task_id": "task-card-ui-improvements",
+  "task_description": "Implement Card UI improvements: dynamic card height based on content, title 2-line limit with ellipsis truncation, reduced empty space for cards without descriptions.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
