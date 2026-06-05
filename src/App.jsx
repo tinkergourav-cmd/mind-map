@@ -1438,6 +1438,8 @@ export default function WorkflowApp() {
       // Skip if a notification is already being displayed
       if (reminderNotificationRef.current) return;
 
+      let firedThisTick = false;
+
       setReminders(prev => {
         let fired = false;
         let firedReminder = null;
@@ -1471,6 +1473,7 @@ export default function WorkflowApp() {
         });
 
         if (firedReminder) {
+          firedThisTick = true;
           setTimeout(() => {
             setReminderNotification({ id: firedReminder.id, icon: firedReminder.icon, title: firedReminder.title, content: firedReminder.content });
           }, 0);
@@ -1479,8 +1482,8 @@ export default function WorkflowApp() {
         return fired ? updated : prev;
       });
 
-      // Long session detection (every 60 minutes)
-      if (now - lastSessionNotifiedAtRef.current >= 3600000) {
+      // Long session detection (every 60 minutes) - skip if already fired a reminder this tick
+      if (!firedThisTick && now - lastSessionNotifiedAtRef.current >= 3600000) {
         lastSessionNotifiedAtRef.current = now;
         const sessionMinutes = Math.floor((now - sessionStartTime) / 60000);
         setTimeout(() => {
@@ -5491,7 +5494,7 @@ export default function WorkflowApp() {
             showPanel={showReminderPanel}
             onClose={() => setShowReminderPanel(false)}
             onAddReminder={(reminder) => { setReminders(prev => [...prev, { ...reminder, id: `r-${Date.now()}`, createdAt: Date.now(), lastShownAt: null, nextReminderAt: reminder.enabled ? Date.now() + reminder.frequency * 60000 : null }]); }}
-            onUpdateReminder={(id, updates) => { setReminders(prev => prev.map(r => r.id === id ? { ...r, ...updates, nextReminderAt: updates.enabled === false ? null : (updates.frequency ? Date.now() + (updates.frequency || r.frequency) * 60000 : r.nextReminderAt) } : r)); }}
+            onUpdateReminder={(id, updates) => { setReminders(prev => prev.map(r => r.id === id ? { ...r, ...updates, nextReminderAt: updates.enabled === false ? null : (updates.frequency && updates.frequency !== r.frequency ? Date.now() + updates.frequency * 60000 : r.nextReminderAt) } : r)); }}
             onDeleteReminder={(id) => { setReminders(prev => prev.filter(r => r.id !== id)); }}
             onToggleReminder={(id) => { setReminders(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled, nextReminderAt: !r.enabled ? Date.now() + r.frequency * 60000 : null } : r)); }}
             onImportReminders={(imported) => { setReminders(prev => [...prev, ...imported.map(r => ({ ...r, id: `r-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, lastShownAt: null, nextReminderAt: r.enabled ? Date.now() + r.frequency * 60000 : null }))]); }}

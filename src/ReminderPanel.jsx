@@ -36,28 +36,8 @@ function getFrequencyLabel(freq) {
   return `${freq}m`;
 }
 
-export default function ReminderPanel({
-  reminders,
-  showPanel,
-  onClose,
-  onAddReminder,
-  onUpdateReminder,
-  onDeleteReminder,
-  onToggleReminder,
-  onImportReminders,
-  onExportReminders,
-  onEnableAll,
-  onDisableAll,
-}) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [customFreqInput, setCustomFreqInput] = useState('');
-  const fileInputRef = useRef(null);
-
-  if (!showPanel) return null;
-
-  const EditForm = ({ isNew }) => (
+function EditForm({ isNew, editForm, setEditForm, customFreqInput, setCustomFreqInput, saveEdit, cancelEdit, onDeleteReminder, editingId }) {
+  return (
     <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
       <input
         type="text"
@@ -181,7 +161,7 @@ export default function ReminderPanel({
         <button onClick={cancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors">Cancel</button>
         {!isNew && (
           <button
-            onClick={() => { onDeleteReminder(editingId); setEditingId(null); }}
+            onClick={() => { onDeleteReminder(editingId); }}
             className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-semibold rounded transition-colors ml-auto"
           >
             Delete
@@ -190,6 +170,28 @@ export default function ReminderPanel({
       </div>
     </div>
   );
+}
+
+export default function ReminderPanel({
+  reminders,
+  showPanel,
+  onClose,
+  onAddReminder,
+  onUpdateReminder,
+  onDeleteReminder,
+  onToggleReminder,
+  onImportReminders,
+  onExportReminders,
+  onEnableAll,
+  onDisableAll,
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [customFreqInput, setCustomFreqInput] = useState('');
+  const fileInputRef = useRef(null);
+
+  if (!showPanel) return null;
 
   const filteredReminders = reminders.filter(r => {
     if (!searchQuery) return true;
@@ -336,7 +338,7 @@ export default function ReminderPanel({
           <div key={reminder.id}>
             {editingId === reminder.id ? (
               /* Editing Mode */
-              <EditForm isNew={false} />
+              <EditForm isNew={false} editForm={editForm} setEditForm={setEditForm} customFreqInput={customFreqInput} setCustomFreqInput={setCustomFreqInput} saveEdit={saveEdit} cancelEdit={cancelEdit} onDeleteReminder={onDeleteReminder} editingId={editingId} />
             ) : (
               /* Display Mode */
               <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 group transition-colors border-b border-slate-50">
@@ -388,7 +390,7 @@ export default function ReminderPanel({
 
         {/* New Reminder Inline Form */}
         {editingId === 'new' && (
-          <EditForm isNew={true} />
+          <EditForm isNew={true} editForm={editForm} setEditForm={setEditForm} customFreqInput={customFreqInput} setCustomFreqInput={setCustomFreqInput} saveEdit={saveEdit} cancelEdit={cancelEdit} onDeleteReminder={onDeleteReminder} editingId={editingId} />
         )}
       </div>
 
