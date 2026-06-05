@@ -1,0 +1,22 @@
+{
+  "project_type": "React SPA (Vite + Tailwind CSS) - Mind-map/canvas application called ThoughtFlow",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite with npm, no test framework configured",
+  "test_framework": "None - no test files or test dependencies in the project",
+  "build_command": "cd /projects/sandbox/mind-map && npm run build",
+  "test_command": "No test command available - verify via build only",
+  "verification_instructions": "1. Run npm install, 2. Run npm run build, 3. Verify no build errors",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "OPEN_INTERNET - full network access. Node.js v22 available. No test framework configured.",
+  "contribution_requirements": "No CONTRIBUTING.md found. Follow existing code patterns.",
+  "key_patterns": "Single-file architecture: App.jsx (~5800 lines) contains all state and logic. Separate panel components (ReminderPanel.jsx, TaskPanel.jsx, PinPanel.jsx, MiniMap.jsx). Uses lucide-react for icons. Tailwind CSS for styling. Keyboard shortcuts registered via useEffect with window event listeners. Timer state: showTimer, timerSeconds, timerRunning, timerPaused, timerDone, timerCustomMinutes. Reminder system uses notification queue with auto-dismiss after 8 seconds. Timer panel is a floating widget at bottom-right. Inline styles with dangerouslySetInnerHTML for keyframes.",
+  "relevant_files": [
+    "/projects/sandbox/mind-map/src/App.jsx",
+    "/projects/sandbox/mind-map/src/ReminderPanel.jsx",
+    "/projects/sandbox/mind-map/src/index.css",
+    "/projects/sandbox/mind-map/tailwind.config.js",
+    "/projects/sandbox/mind-map/package.json"
+  ],
+  "directory_structure": "Root: package.json, vite.config.js, tailwind.config.js, index.html. src/: App.jsx (main app with all state/logic), ReminderPanel.jsx (reminder settings panel), TaskPanel.jsx, PinPanel.jsx, MiniMap.jsx, main.jsx (entry), index.css (Tailwind base)."
+}

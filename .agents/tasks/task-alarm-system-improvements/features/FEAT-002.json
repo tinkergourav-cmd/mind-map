@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement all three alarm system improvements: (1) Configurable keyboard shortcuts for alarms/timers, (2) Strong visual response when timer/alarm finishes that persists until acknowledged, (3) Persistent countdown display on the canvas that remains visible at 50% opacity when the timer panel is closed.",
+  "status": "pending",
+  "steps": [
+    "Step 1 - Add keyboard shortcut state to App.jsx: Add a new state variable `timerShortcuts` (object mapping actions like 'toggleTimer', 'startPreset5', 'startPreset10', 'pauseResume', 'reset' to key combos). Initialize with sensible defaults (e.g., Alt+T for toggle timer, Alt+1 through Alt+5 for presets). Store shortcuts in the project save data alongside other timer states.",
+    "Step 2 - Register keyboard shortcut listener: Add a new useEffect in App.jsx that registers a keydown listener checking against configured shortcuts. When a shortcut matches, perform the corresponding action (toggle timer panel, start specific preset, pause/resume, reset). Follow the same pattern as existing keyboard handlers (check e.target.tagName for INPUT/TEXTAREA exclusion).",
+    "Step 3 - Add shortcut configuration UI in the timer panel: In the timer panel section (around line 4985 in App.jsx), add a 'Shortcuts' section below the existing timer controls. Display each action name with its current shortcut key displayed in a badge. Include an 'Edit' button that, when clicked, puts the field into 'listening' mode where the next keypress is captured and assigned. Use a small inline form, not a modal.",
+    "Step 4 - Strong visual alarm response: When `timerDone` becomes true, instead of the current small animate-pulse effect, render a full-screen overlay/modal that is impossible to miss. Create an `AlarmOverlay` component (can be inline in App.jsx or a separate file) that: (a) covers the entire viewport with a semi-transparent animated backdrop, (b) shows a large centered alert card with the timer icon, 'Time is up!' message, and a prominent 'Dismiss' button, (c) has a flashing/pulsing border animation on the alert card, (d) remains visible until the user clicks Dismiss (remove the auto-dismiss behavior for the timer), (e) plays the existing beep sound on loop or repeated beeps until dismissed.",
+    "Step 5 - Persistent countdown display on canvas: When `timerRunning` is true (regardless of whether `showTimer` panel is open), render a small fixed-position countdown badge on the canvas. Position it at the top-center or top-right of the viewport. Style it with approximately 50% opacity (`opacity-50`), showing the countdown in MM:SS format. Clicking the countdown badge should open the timer panel (`setShowTimer(true)`). The badge should NOT appear when the full timer panel is already showing (to avoid redundancy), OR it can always show - either approach works as long as it is visible when the panel is closed. Use the existing `formatTimerDisplay` function for formatting.",
+    "Step 6 - Update reminder notification to also use strong visual response: Modify the existing reminder notification toast (around line 5730) to become a more prominent alert. Remove the 8-second auto-dismiss timer. Instead, keep the notification visible until the user explicitly clicks Dismiss. Add a subtle flashing border or pulsing glow animation to make it attention-grabbing. The notification should use a fixed centered modal-like appearance rather than the current bottom-positioned toast.",
+    "Step 7 - Add CSS keyframe animations: In the inline <style> tag at the bottom of App.jsx (around line 5810), add keyframe animations for the alarm overlay: a border-pulse animation that alternates border color, a backdrop-flash animation for the overlay background, and a scale-bounce for the alert card entrance. Alternatively, add them to src/index.css.",
+    "Step 8 - Persist timer shortcuts in localStorage: Ensure timerShortcuts are saved as part of the project data (in the projects array alongside reminders, tasks, etc.) and restored on load. Follow the pattern used for `reminders` state - saved in the project object and loaded during initialization."
+  ],
+  "acceptance_criteria": [
+    "Pressing configured keyboard shortcuts triggers timer actions (toggle panel, start presets, pause/resume, reset)",
+    "Shortcut configuration is visible in the timer panel UI and can be changed by the user",
+    "When a timer finishes, a full-screen prominent visual alert appears with flashing/pulsing animation",
+    "The timer completion alert remains visible until the user explicitly clicks Dismiss",
+    "When a timer is running and the timer panel is closed, a persistent countdown indicator is visible on the canvas at approximately 50% opacity",
+    "Clicking the persistent countdown indicator opens the timer settings panel",
+    "The countdown updates in real time (every second)",
+    "Reminder notifications no longer auto-dismiss - they persist until user acknowledges them",
+    "Reminder notifications have enhanced visual prominence (centered modal-style, animated border)",
+    "The project builds successfully with `npm run build`"
+  ],
+  "verification": [
+    "cd /projects/sandbox/mind-map && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
