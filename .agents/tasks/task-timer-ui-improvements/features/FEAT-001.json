@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Timer UI improvements: stable toolbar layout, repositioned countdown indicator below top bar, opacity behavior for top bar and toolbar, and UI stability across timer state changes.",
+  "status": "completed",
+  "steps": [
+    "Step 1 - Stabilize the toolbar layout (lines ~5005-5093 in App.jsx): Restructure the bottom-right floating toolbar so that the timer button, task button, and zoom controls are in a single stable horizontal row. Currently the timer button and task button are in a flex-col div that also contains the timer panel above them - the panel opening/closing causes vertical layout shift. Fix this by: (a) separating the timer panel from the button row, (b) using absolute positioning for the timer panel so it does not affect button placement, (c) putting all action buttons (timer, tasks, zoom in, reset, zoom out, minimap) in a single horizontal flex container with consistent sizing.",
+    "Step 2 - Reposition the countdown indicator (lines ~5748-5770 in App.jsx): Move the persistent countdown indicator from 'fixed top-4 right-4' to directly below the top bar header. The header is h-10. Position the countdown at 'fixed top-10 left-1/2 -translate-x-1/2' or similar so it sits centered (or right-aligned) just below the top bar. It should have z-50, be compact, and clicking it should call setShowTimer(true). Keep the existing styling (backdrop-blur, rounded, small shadow) but adjust positioning.",
+    "Step 3 - Add opacity behavior to the top bar and toolbar: (a) For the top bar header element (line ~4110), add 'opacity-50 hover:opacity-100 transition-opacity duration-300' classes. (b) For the bottom-right floating toolbar container (line ~5007), add the same 'opacity-50 hover:opacity-100 transition-opacity duration-300' classes. This makes both elements semi-transparent when not hovered and smoothly transition to full opacity on hover.",
+    "Step 4 - Ensure UI stability: Make sure that starting, pausing, resuming, or opening the timer does not shift the toolbar buttons. The timer panel should use absolute/fixed positioning relative to the toolbar so toggling it does not move buttons. The toolbar buttons should have fixed dimensions (w and h) so their size is consistent regardless of timer state. Verify the timer toggle button does not change size when timerDone adds the animate-pulse ring."
+  ],
+  "acceptance_criteria": [
+    "All toolbar action buttons remain in a single horizontal row regardless of timer panel open/close state",
+    "The countdown indicator (when timer is running and panel is closed) appears directly below the top bar, not at top-right corner",
+    "Clicking the countdown indicator opens the timer panel",
+    "The top bar (header) has approximately 50% opacity by default and transitions to 100% on hover",
+    "The bottom-right floating toolbar has approximately 50% opacity by default and transitions to 100% on hover",
+    "Starting, pausing, resuming, or opening/closing the timer does not shift any buttons or controls",
+    "The app builds successfully with npm run build"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/mind-map && npm run build' and confirm it succeeds without errors"
+  ],
+  "blocked_reason": null,
+  "findings": "All 4 steps implemented successfully. Toolbar restructured into single horizontal row with absolute-positioned timer panel. Countdown indicator repositioned to top-12 left-1/2 centered below header with z-[51] (bumped from z-[45] to render above header on overlap). Header idle opacity changed from 50 to 60 for better discoverability. Toolbar wrapper conditionally uses opacity-100 when showTimer is true so the timer panel stays fully visible while open. Build passes cleanly."
+}

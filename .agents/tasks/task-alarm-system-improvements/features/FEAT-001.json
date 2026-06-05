@@ -1,0 +1,18 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Install dependencies and verify the project builds successfully before making any changes.",
+  "status": "completed",
+  "steps": [
+    "Run `npm install` in /projects/sandbox/mind-map to install all dependencies",
+    "Run `npm run build` to confirm the project compiles without errors"
+  ],
+  "acceptance_criteria": [
+    "`npm run build` completes with exit code 0 and produces output in dist/"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it exits successfully"
+  ],
+  "blocked_reason": null,
+  "findings": "npm install added 182 packages with 0 vulnerabilities. npm run build completed successfully in 2.17s producing dist/ output. Node.js v22 environment works without issues."
+}

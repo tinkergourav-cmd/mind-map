@@ -1,0 +1,20 @@
+{
+  "project_type": "Vite + React (JSX) single-page mind-map/canvas application with Tailwind CSS",
+  "language": "JavaScript (React JSX)",
+  "build_system": "Vite with @vitejs/plugin-react",
+  "test_framework": "None - no test framework configured",
+  "build_command": "cd /projects/sandbox/mind-map && npm run build",
+  "test_command": "No test command available - validate via build only",
+  "verification_instructions": "Run `npm run build` to verify no compilation errors. Manual verification of UI changes would require running `npm run dev`.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "OPEN_INTERNET - full network access. Node.js v22 available via nvm.",
+  "contribution_requirements": "No CONTRIBUTING.md found. Follow existing code patterns: single-file components, Tailwind CSS classes, lucide-react icons, useState/useEffect/useCallback hooks.",
+  "key_patterns": "- All app state lives in App.jsx (5800+ lines single file). Timer state: showTimer, timerSeconds, timerRunning, timerPaused, timerDone, timerCustomMinutes. Timer functions: startTimer, pauseTimer, resumeTimer, resetTimer, formatTimerDisplay. Keyboard shortcuts use useEffect + window.addEventListener('keydown', handler) pattern with early returns for INPUT/TEXTAREA. Existing shortcuts: M=minimap, T=tasks, P=pins, R=reminders, S=sidebar, N=new card. Timer widget renders inside bottom-right floating panel at lines ~4984-5050. Toast notifications use fixed positioning with Tailwind animate-in classes. Reminder notifications use a queue system with auto-dismiss after 8 seconds.",
+  "relevant_files": [
+    "/projects/sandbox/mind-map/src/App.jsx",
+    "/projects/sandbox/mind-map/src/ReminderPanel.jsx",
+    "/projects/sandbox/mind-map/package.json"
+  ],
+  "directory_structure": "src/App.jsx - main app component (5800 lines, all state/logic), src/ReminderPanel.jsx - reminder panel sidebar, src/MiniMap.jsx - mini map overlay, src/TaskPanel.jsx - task management panel, src/PinPanel.jsx - pin management panel, src/main.jsx - entry point, src/index.css - Tailwind base styles"
+}

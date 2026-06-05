@@ -435,7 +435,9 @@ export default function WorkflowApp() {
   const [timerPaused, setTimerPaused] = useState(false);
   const [timerDone, setTimerDone] = useState(false);
   const [timerCustomMinutes, setTimerCustomMinutes] = useState('');
+  const [timerNotification, setTimerNotification] = useState(false);
   const timerIntervalRef = useRef(null);
+  const timerNotificationTimerRef = useRef(null);
 
   // --- Multi-Selection States ---
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
@@ -815,6 +817,7 @@ export default function WorkflowApp() {
             clearInterval(timerIntervalRef.current);
             setTimerRunning(false);
             setTimerDone(true);
+            setTimerNotification(true);
             // Play a short beep using Web Audio API
             try {
               const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -837,6 +840,14 @@ export default function WorkflowApp() {
     }
     return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
   }, [timerRunning, timerPaused]);
+
+  // --- Timer Notification Auto-Dismiss ---
+  useEffect(() => {
+    if (timerNotification) {
+      timerNotificationTimerRef.current = setTimeout(() => setTimerNotification(false), 5000);
+    }
+    return () => { if (timerNotificationTimerRef.current) clearTimeout(timerNotificationTimerRef.current); };
+  }, [timerNotification]);
 
   // Keep projectsRef in sync with projects state for debounced localStorage writes
   useEffect(() => {
@@ -1418,6 +1429,20 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleReminderKey);
     return () => window.removeEventListener('keydown', handleReminderKey);
+  }, []);
+
+  // --- F key toggles timer panel ---
+  useEffect(() => {
+    const handleTimerKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setShowTimer(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleTimerKey);
+    return () => window.removeEventListener('keydown', handleTimerKey);
   }, []);
 
   // --- Reminder Scheduling Engine ---
@@ -4082,7 +4107,7 @@ export default function WorkflowApp() {
     <div className="flex flex-col h-screen w-full bg-[#f8fafc] font-sans text-slate-800 selection:bg-indigo-100 overflow-hidden">
       
       {/* --- Top Command Toolbar --- */}
-      <header className="h-10 bg-white border-b border-slate-200/80 flex items-center px-2 sm:px-3 z-50 justify-between shrink-0 gap-1 sm:gap-2">
+      <header className="h-10 bg-white/50 backdrop-blur-sm border-b border-slate-200/80 flex items-center px-2 sm:px-3 z-50 justify-between shrink-0 gap-1 sm:gap-2 hover:bg-white/90 transition-all duration-300">
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
           <button 
             onClick={() => setShowSidebar(!showSidebar)}
@@ -4979,91 +5004,88 @@ export default function WorkflowApp() {
           />
 
           {/* --- Bottom-Right Floating Zoom and Guides --- */}
-          <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex items-end gap-2 sm:gap-3 z-50">
+          <div className={`absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 ${showTimer ? 'opacity-100' : 'opacity-50 hover:opacity-100'} transition-opacity duration-300`}>
 
-            {/* Timer Widget */}
-            <div className="flex flex-col items-stretch">
-              {showTimer && (
-                <div className={`mb-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 p-3 min-w-[200px] ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}>
-                  {/* Timer Display */}
-                  <div className="text-center mb-2">
-                    <span className={`text-2xl font-bold font-mono ${timerDone ? 'text-orange-600' : timerRunning ? 'text-indigo-700' : 'text-slate-700'}`}>
-                      {formatTimerDisplay(timerSeconds)}
-                    </span>
-                    {timerDone && <div className="text-xs text-orange-600 font-semibold mt-1">Time is up!</div>}
-                  </div>
-
-                  {/* Preset Buttons */}
-                  {!timerRunning && !timerDone && (
-                    <div className="flex flex-wrap gap-1 mb-2 justify-center">
-                      {[5, 10, 15, 20, 30].map(min => (
-                        <button key={min} onClick={() => startTimer(min)} className="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-600 rounded-md transition-colors">{min}m</button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Custom Input */}
-                  {!timerRunning && !timerDone && (
-                    <div className="flex items-center gap-1 mb-2">
-                      <input
-                        type="number"
-                        min="1"
-                        max="999"
-                        placeholder="Min"
-                        value={timerCustomMinutes}
-                        onChange={(e) => setTimerCustomMinutes(e.target.value)}
-                        className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                      />
-                      <button
-                        onClick={() => { const m = parseInt(timerCustomMinutes); if (m > 0) { startTimer(m); setTimerCustomMinutes(''); } }}
-                        className="px-2 py-1 text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white rounded-md transition-colors"
-                      >Start</button>
-                    </div>
-                  )}
-
-                  {/* Controls */}
-                  {timerRunning && (
-                    <div className="flex gap-1 justify-center">
-                      {!timerPaused ? (
-                        <button onClick={pauseTimer} className="px-3 py-1 text-xs font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md transition-colors">Pause</button>
-                      ) : (
-                        <button onClick={resumeTimer} className="px-3 py-1 text-xs font-semibold bg-green-100 hover:bg-green-200 text-green-800 rounded-md transition-colors">Resume</button>
-                      )}
-                      <button onClick={resetTimer} className="px-3 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors">Reset</button>
-                    </div>
-                  )}
-
-                  {timerDone && (
-                    <div className="flex justify-center">
-                      <button onClick={resetTimer} className="px-3 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors">Dismiss</button>
-                    </div>
-                  )}
+            {/* Timer Panel - absolutely positioned above toolbar */}
+            {showTimer && (
+              <div className={`absolute bottom-full right-0 mb-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 p-3 min-w-[200px] ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}>
+                {/* Timer Display */}
+                <div className="text-center mb-2">
+                  <span className={`text-2xl font-bold font-mono ${timerDone ? 'text-orange-600' : timerRunning ? 'text-indigo-700' : 'text-slate-700'}`}>
+                    {formatTimerDisplay(timerSeconds)}
+                  </span>
+                  {timerDone && <div className="text-xs text-orange-600 font-semibold mt-1">Time is up!</div>}
                 </div>
-              )}
 
+                {/* Preset Buttons */}
+                {!timerRunning && !timerDone && (
+                  <div className="flex flex-wrap gap-1 mb-2 justify-center">
+                    {[5, 10, 15, 20, 30].map(min => (
+                      <button key={min} onClick={() => startTimer(min)} className="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-600 rounded-md transition-colors">{min}m</button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom Input */}
+                {!timerRunning && !timerDone && (
+                  <div className="flex items-center gap-1 mb-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="999"
+                      placeholder="Min"
+                      value={timerCustomMinutes}
+                      onChange={(e) => setTimerCustomMinutes(e.target.value)}
+                      className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                    />
+                    <button
+                      onClick={() => { const m = parseInt(timerCustomMinutes); if (m > 0) { startTimer(m); setTimerCustomMinutes(''); } }}
+                      className="px-2 py-1 text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white rounded-md transition-colors"
+                    >Start</button>
+                  </div>
+                )}
+
+                {/* Controls */}
+                {timerRunning && (
+                  <div className="flex gap-1 justify-center">
+                    {!timerPaused ? (
+                      <button onClick={pauseTimer} className="px-3 py-1 text-xs font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md transition-colors">Pause</button>
+                    ) : (
+                      <button onClick={resumeTimer} className="px-3 py-1 text-xs font-semibold bg-green-100 hover:bg-green-200 text-green-800 rounded-md transition-colors">Resume</button>
+                    )}
+                    <button onClick={resetTimer} className="px-3 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors">Reset</button>
+                  </div>
+                )}
+
+                {timerDone && (
+                  <div className="flex justify-center">
+                    <button onClick={resetTimer} className="px-3 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors">Dismiss</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Single vertical button column */}
+            <div className="flex flex-col items-center bg-white rounded-lg shadow-lg border border-slate-200 p-1 gap-0.5">
               <button
                 onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
-                className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}
-                title="Timer"
+                className={`p-1.5 sm:p-2 rounded-md transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}
+                title="Timer (F)"
               >
                 <Timer className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button
                 onClick={() => setShowTaskPanel(prev => !prev)}
-                className={`self-center p-2 rounded-lg shadow-lg border transition-colors ${showTaskPanel ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                className={`p-1.5 sm:p-2 rounded-md transition-colors ${showTaskPanel ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-100'}`}
                 title="Tasks (T)"
               >
                 <ListTodo className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
-            </div>
-
-            <div className="flex flex-col items-center bg-white rounded-lg shadow-lg border border-slate-200 p-1">
+              <div className="h-px w-5 bg-slate-200 my-0.5" />
               <button onClick={() => handleZoom(0.25)} className="p-1.5 sm:p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors" title="Zoom In"><ZoomIn className="w-4 h-4 sm:w-5 sm:h-5"/></button>
-              <div className="w-full h-[1px] bg-slate-200 my-0.5 sm:my-1" />
               <button onClick={() => setTransform({x:0, y:0, scale:1})} className="p-1.5 sm:p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors" title="Reset View"><Focus className="w-4 h-4 sm:w-5 sm:h-5"/></button>
-              <div className="w-full h-[1px] bg-slate-200 my-0.5 sm:my-1" />
               <button onClick={() => handleZoom(-0.25)} className="p-1.5 sm:p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors" title="Zoom Out"><ZoomOut className="w-4 h-4 sm:w-5 sm:h-5"/></button>
-              <div className="w-full h-[1px] bg-slate-200 my-0.5 sm:my-1" />
+              <div className="h-px w-5 bg-slate-200 my-0.5" />
               <button onClick={() => { setShowMiniMap(prev => !prev); setMiniMapOpenedViaShortcut(false); }} className={`p-1.5 sm:p-2 hover:bg-slate-100 rounded-md transition-colors ${showMiniMap ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'}`} title="Toggle Mini Map (M)"><Map className="w-4 h-4 sm:w-5 sm:h-5"/></button>
             </div>
           </div>
@@ -5720,10 +5742,46 @@ export default function WorkflowApp() {
       {/* --- Secret Project Panel --- */}
       {showProjectPanel && renderProjectPanel(false)}
 
+      {/* --- Timer Running Countdown (when panel closed) --- */}
+      {timerRunning && !showTimer && (
+        <div
+          className={`fixed top-12 left-1/2 -translate-x-1/2 z-[51] hover:opacity-90 transition-opacity cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2.5 py-1.5 flex items-center gap-1.5 ${timerPaused ? 'opacity-70' : 'opacity-50'}`}
+          onClick={() => setShowTimer(true)}
+          title="Click to open timer"
+        >
+          <Timer className={`w-3.5 h-3.5 ${timerPaused ? 'text-amber-500' : 'text-indigo-600'}`} />
+          <span className={`text-sm font-mono font-semibold ${timerPaused ? 'text-amber-600' : 'text-slate-700'}`}>
+            {(() => {
+              const minutes = Math.ceil(timerSeconds / 60);
+              return `${minutes.toString().padStart(2, '0')}m`;
+            })()}
+          </span>
+          {timerPaused && (
+            <span className="text-xs text-amber-500 font-medium">(paused)</span>
+          )}
+        </div>
+      )}
+
       {/* --- Toast Notification --- */}
       {toastMessage && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-full shadow-lg animate-in fade-in duration-200">
           {toastMessage}
+        </div>
+      )}
+
+      {/* --- Timer Complete Notification --- */}
+      {timerNotification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[90] animate-in slide-in-from-top fade-in duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-orange-200 px-4 py-3 flex items-center gap-3">
+            <span className="text-xl">⏰</span>
+            <span className="text-sm font-semibold text-orange-700">Timer Complete!</span>
+            <button
+              onClick={() => setTimerNotification(false)}
+              className="p-1 hover:bg-orange-100 rounded-lg text-orange-400 hover:text-orange-600 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
