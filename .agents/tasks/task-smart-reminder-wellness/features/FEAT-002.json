@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement the core Reminder data model, state management, localStorage persistence, and the ReminderPanel component with full CRUD, search, bulk enable/disable, import/export/backup/restore capabilities. Also implement the reminder scheduling engine (time-based intervals, workspace-open triggers, long-session detection, random mode) and the non-intrusive notification toast UI. Finally, integrate the reminder system into App.jsx with a toolbar toggle button, keyboard shortcut, and connect to the workspace open lifecycle.",
+  "status": "pending",
+  "steps": [
+    "Create src/ReminderPanel.jsx following the panel pattern established by PinPanel.jsx and TaskPanel.jsx. The panel should include: (1) Header with bell icon, title 'Reminders', count, and close button. (2) Search bar for filtering reminders. (3) Reminder list with each item showing icon, title, enabled toggle, frequency badge, and action buttons (edit, delete). (4) Inline edit mode for each reminder with fields: title, content/message, custom icon (emoji picker like PinPanel), frequency (dropdown: every 15min, 30min, 1hr, 2hr, 4hr, daily, custom), showOnWorkspaceOpen toggle, randomMode toggle, activeHours (start/end time inputs), enabled toggle. (5) Bulk actions: enable all, disable all. (6) Footer buttons: Add Reminder, Import Collection, Export Collection, Backup Reminders, Restore Reminders. The import/export should use JSON files with a 'thoughtflow-reminder-collection' type marker. The data model for a Reminder: { id, title, content, icon, enabled, frequency (minutes or 'daily'), showOnWorkspaceOpen, randomMode, activeHours: { start: 'HH:MM', end: 'HH:MM' } | null, lastShownAt, nextReminderAt, createdAt }. The data model for a ReminderCollection export: { type: 'thoughtflow-reminder-collection', version: 1, name, reminders[], createdAt, exportedAt }.",
+    "In App.jsx, add reminder state: (1) const [reminders, setReminders] = useState(defaultReminders) where defaultReminders is a set of ~8 wellness reminders (drink water, take deep breath, stretch, rest eyes, take a short break, review goals, stand up, walk). (2) const [showReminderPanel, setShowReminderPanel] = useState(false). (3) const [reminderNotification, setReminderNotification] = useState(null) for the active toast. (4) const [sessionStartTime, setSessionStartTime] = useState(Date.now()) for long-session detection. (5) const reminderCheckIntervalRef = useRef(null) for the scheduling timer.",
+    "Implement reminder persistence in the project system. Add `reminders` field to the project data structure (alongside tasks, taskGroups, cardTaskLinks). Save reminders when they change using the same debounced localStorage pattern used for other data. Load reminders on project switch/init.",
+    "Implement the reminder scheduling engine as a useEffect in App.jsx that runs a setInterval every 60 seconds. On each tick: (a) Check each enabled reminder where Date.now() >= nextReminderAt. (b) Check activeHours - if set, only fire within that window. (c) For qualifying reminders, show the notification and update lastShownAt/nextReminderAt. (d) For long-session detection: if (Date.now() - sessionStartTime) crosses 60-minute boundaries, show a session-duration reminder. (e) For random mode: from all enabled reminders with randomMode=true, pick one at random if no other reminder has fired recently (throttle to max 1 random reminder per 15 minutes).",
+    "Implement the workspace-open reminder trigger. In the initialization useEffect (where projects are loaded), after loading is complete, check all reminders with showOnWorkspaceOpen=true and display one (or a combined welcome message) as a notification.",
+    "Create the ReminderNotification component (can be inline in App.jsx or a small component). It should be a small, elegant toast that appears at the bottom-center of the screen (above the existing toast). Design: rounded-xl card with backdrop-blur, emoji icon on left, message text, and a dismiss X button. Auto-dismiss after 8 seconds. Use CSS animation (slide-up + fade-in). Position: fixed bottom-28 left-1/2 -translate-x-1/2 z-[85].",
+    "Add toolbar button for reminders in the right-side floating toolbar (next to the Timer and Tasks buttons in the flex-col div around line 4863). Use the Bell icon from lucide-react. Follow the same styling pattern: self-center p-2 rounded-lg shadow-lg border, active state bg-indigo-50 text-indigo-600 border-indigo-200.",
+    "Add keyboard shortcut: 'R' key toggles the reminder panel (following the pattern of 'T' for tasks, 'M' for minimap). Register in a useEffect similar to the existing keyboard handlers.",
+    "Render the ReminderPanel conditionally in the JSX alongside TaskPanel and PinPanel (after the PinPanel render block around line 5345). Pass all necessary props: reminders, onClose, onAdd, onUpdate, onDelete, onToggle, onImport, onExport, onBackup, onRestore.",
+    "Render the ReminderNotification toast in the JSX (before or after the existing toast at bottom of JSX). Only render when reminderNotification is not null."
+  ],
+  "acceptance_criteria": [
+    "ReminderPanel.jsx exists and renders a full-featured panel with search, CRUD for reminders, inline editing, bulk toggle, and import/export/backup/restore buttons",
+    "App.jsx includes reminder state, persistence to localStorage via project system, and scheduling engine",
+    "Default set of 8 wellness reminders are created on first load",
+    "Time-based reminders fire at configured intervals and show a non-intrusive notification",
+    "Workspace-open reminders display when workspace loads",
+    "Long-session detection shows a reminder after 60 minutes of continuous work",
+    "Random mode picks from eligible reminders periodically",
+    "Export produces a JSON file with 'thoughtflow-reminder-collection' type",
+    "Import reads such a file and adds/replaces reminders",
+    "Backup/Restore works independently from workspace backup",
+    "Toolbar has a bell icon button that toggles the panel",
+    "R key toggles the reminder panel",
+    "Notification toast is non-intrusive, auto-dismisses, and can be manually dismissed",
+    "`npm run build` passes without errors"
+  ],
+  "verification": [
+    "Run `npm run build` in /projects/sandbox/mind-map and confirm exit code 0 with no compilation errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
