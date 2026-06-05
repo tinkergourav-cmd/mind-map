@@ -22,5 +22,5 @@
     "Run 'cd /projects/sandbox/mind-map && npm run build' and confirm it succeeds without errors"
   ],
   "blocked_reason": null,
-  "findings": "All 4 steps implemented successfully. Toolbar restructured into single horizontal row with absolute-positioned timer panel. Countdown indicator repositioned to top-11 left-1/2 centered below header with z-[45]. Header and toolbar both have opacity-50 hover:opacity-100 transition. All buttons use consistent p-1.5 sm:p-2 sizing. Build passes cleanly."
+  "findings": "All 4 steps implemented successfully. Toolbar restructured into single horizontal row with absolute-positioned timer panel. Countdown indicator repositioned to top-12 left-1/2 centered below header with z-[51] (bumped from z-[45] to render above header on overlap). Header idle opacity changed from 50 to 60 for better discoverability. Toolbar wrapper conditionally uses opacity-100 when showTimer is true so the timer panel stays fully visible while open. Build passes cleanly."
 }
