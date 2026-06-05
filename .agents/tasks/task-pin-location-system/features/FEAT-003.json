@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Pin system usability improvements: z-index fix (portal popover), single-click select + drag, double-click edit, remove Save button, subtle delete option, click-outside-to-close, P key toggles visibility, PP double-press toggles panel.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Add pin selection and dragging state: Add selectedPinId state, draggingPin state (with startX, startY, offsetX, offsetY). Add pinsVisible state for toggling all pin visibility at once.",
     "Step 2 - Change keyboard shortcuts: P key now toggles pin visibility (show/hide all pins). PP double-press (within 300ms) toggles pin panel. Shift+P still drops pin at center.",
@@ -29,5 +29,5 @@
     "Run `cd /projects/sandbox/mind-map && npx vite build` and confirm it completes with exit code 0"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All usability improvements implemented. Pin edit popover now renders outside the canvas transform layer with z-[10000], guaranteeing it appears above all canvas content. Single click selects (with rose-400 ring), double click opens edit popup. Pins are draggable with auto-save. P key toggles visibility with 300ms delay for double-press detection. PP opens panel. Save button removed, auto-save via onChange. Subtle trash icon delete at bottom of popup. Click-outside-to-close via overlay div. Build passes cleanly."
 }
