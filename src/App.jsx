@@ -4107,7 +4107,7 @@ export default function WorkflowApp() {
     <div className="flex flex-col h-screen w-full bg-[#f8fafc] font-sans text-slate-800 selection:bg-indigo-100 overflow-hidden">
       
       {/* --- Top Command Toolbar --- */}
-      <header className="h-10 bg-white border-b border-slate-200/80 flex items-center px-2 sm:px-3 z-50 justify-between shrink-0 gap-1 sm:gap-2 opacity-50 hover:opacity-100 transition-opacity duration-300">
+      <header className="h-10 bg-white border-b border-slate-200/80 flex items-center px-2 sm:px-3 z-50 justify-between shrink-0 gap-1 sm:gap-2 opacity-60 hover:opacity-100 transition-opacity duration-300">
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
           <button 
             onClick={() => setShowSidebar(!showSidebar)}
@@ -5004,7 +5004,7 @@ export default function WorkflowApp() {
           />
 
           {/* --- Bottom-Right Floating Zoom and Guides --- */}
-          <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 opacity-50 hover:opacity-100 transition-opacity duration-300">
+          <div className={`absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 ${showTimer ? 'opacity-100' : 'opacity-50 hover:opacity-100'} transition-opacity duration-300`}>
 
             {/* Timer Panel - absolutely positioned above toolbar */}
             {showTimer && (
@@ -5745,7 +5745,7 @@ export default function WorkflowApp() {
       {/* --- Timer Running Countdown (when panel closed) --- */}
       {timerRunning && !showTimer && (
         <div
-          className={`fixed top-11 left-1/2 -translate-x-1/2 z-[45] hover:opacity-90 transition-opacity cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2.5 py-1.5 flex items-center gap-1.5 ${timerPaused ? 'opacity-70' : 'opacity-50'}`}
+          className={`fixed top-12 left-1/2 -translate-x-1/2 z-[51] hover:opacity-90 transition-opacity cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200/50 px-2.5 py-1.5 flex items-center gap-1.5 ${timerPaused ? 'opacity-70' : 'opacity-50'}`}
           onClick={() => setShowTimer(true)}
           title="Click to open timer"
         >
