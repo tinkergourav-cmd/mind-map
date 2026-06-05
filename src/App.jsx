@@ -5998,9 +5998,18 @@ export default function WorkflowApp() {
             if (pressed.length > 1 || (pressed.length === 1 && !['Control', 'Alt', 'Shift', 'Meta'].includes(pressed[0]))) {
               const combo = pressed.join('+');
               // Reserved shortcuts that conflict with built-in keys
-              const reservedShortcuts = ['S', 'M', 'T', 'N', 'R', 'P', 'C', 'Alt+Shift+X', 'Ctrl+Shift+/'];
+              const reservedShortcuts = ['S', 'M', 'T', 'N', 'R', 'P', 'C', 'Shift+T', 'Shift+P', 'Alt+Shift+X', 'Ctrl+Shift+/'];
               if (reservedShortcuts.includes(combo)) {
                 setShortcutWarning('That shortcut is reserved by the app');
+                setTimeout(() => setShortcutWarning(null), 2000);
+                return;
+              }
+              // Check for intra-map duplicate: combo already used by another timer action
+              const duplicateAction = Object.entries(timerShortcuts).find(
+                ([action, shortcut]) => action !== editingShortcut && shortcut === combo
+              );
+              if (duplicateAction) {
+                setShortcutWarning('That shortcut is already used by another timer action');
                 setTimeout(() => setShortcutWarning(null), 2000);
                 return;
               }
