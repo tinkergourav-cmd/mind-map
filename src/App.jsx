@@ -1408,7 +1408,7 @@ export default function WorkflowApp() {
   // --- T key toggles task panel ---
   useEffect(() => {
     const handleTaskKey = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
       if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
