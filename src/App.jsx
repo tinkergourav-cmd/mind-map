@@ -4827,7 +4827,7 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className="w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar cursor-text whitespace-pre-wrap"
+                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar whitespace-pre-wrap ${editMode ? 'cursor-text' : 'cursor-default'}`}
                           title="Click to edit content"
                         >
                           {renderLinks(node.content)}
@@ -4836,8 +4836,8 @@ export default function WorkflowApp() {
                     </div>
                   ) : (
                     <div 
-                      className="mt-1 cursor-text"
-                      onClick={(e) => { e.stopPropagation(); if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
+                      className={`mt-1 ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                      onClick={(e) => { if (editMode) { e.stopPropagation(); takeSnapshot(); setEditingTextNode(node.id); } }}
                       onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}
                     >
                       <span className="text-slate-400 italic text-xs">+ Add notes...</span>
@@ -4848,7 +4848,7 @@ export default function WorkflowApp() {
                   {node.linkToTab && (
                     <button 
                       onClick={() => { const target = workspaces.find(w => w.id === node.linkToTab); if (target) setActiveTab(target.id); }}
-                      onPointerDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}
                       className="flex items-center justify-between px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-md border border-indigo-200/80 transition-all w-full mt-2"
                     >
                       <span className="flex items-center gap-1"><ExternalLink className="w-3 h-3 text-indigo-600" /> Portal</span>
