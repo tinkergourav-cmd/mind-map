@@ -702,14 +702,17 @@ export default function WorkflowApp() {
               let loadedTasks = activeProj.tasks;
               // Migrate old cardTaskLinks to locationPin on tasks
               if (activeProj.cardTaskLinks && Array.isArray(activeProj.cardTaskLinks)) {
-                const initialWorkspaceNodes = initialWorkspaces.flatMap(ws => ws.nodes || []);
                 loadedTasks = loadedTasks.map(t => {
                   if (t.locationPin) return t; // already migrated
                   const link = activeProj.cardTaskLinks.find(l => l.taskId === t.id);
                   if (link) {
-                    const card = initialWorkspaceNodes.find(n => n.id === link.cardId);
-                    if (card) {
-                      return { ...t, locationPin: { x: card.x, y: card.y, canvasId: activeProj.activeTab || '' } };
+                    let foundCanvasId = '';
+                    for (const ws of initialWorkspaces) {
+                      const card = (ws.nodes || []).find(n => n.id === link.cardId);
+                      if (card) {
+                        foundCanvasId = ws.id;
+                        return { ...t, locationPin: { x: card.x, y: card.y, canvasId: foundCanvasId } };
+                      }
                     }
                   }
                   return t;
@@ -1356,16 +1359,22 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [performUndo, performRedo, copyNode, cutNode, pasteNode, copyGroup, cutGroup, pasteGroup, focusedNodeId, focusedGroupId]);
 
-  // --- Escape key clears multi-selection ---
+  // --- Escape key clears multi-selection and cancels drop mode ---
   useEffect(() => {
     const handleEscapeKey = (e) => {
-      if (e.key === 'Escape' && selectedNodeIds.length > 0) {
-        setSelectedNodeIds([]);
+      if (e.key === 'Escape') {
+        if (droppingTaskLocation) {
+          setDroppingTaskLocation(null);
+          return;
+        }
+        if (selectedNodeIds.length > 0) {
+          setSelectedNodeIds([]);
+        }
       }
     };
     window.addEventListener('keydown', handleEscapeKey);
     return () => window.removeEventListener('keydown', handleEscapeKey);
-  }, [selectedNodeIds]);
+  }, [selectedNodeIds, droppingTaskLocation]);
 
   // --- M key toggles mini map ---
   useEffect(() => {
@@ -2206,14 +2215,15 @@ export default function WorkflowApp() {
           }
           // Migrate old cardTaskLinks to locationPin on tasks during import
           if (Array.isArray(importedData.cardTaskLinks) && importedData.cardTaskLinks.length > 0) {
-            const allImportedNodes = importedData.workspaces.flatMap(ws => ws.nodes || []);
             setTasks(prev => prev.map(t => {
               if (t.locationPin) return t;
               const link = importedData.cardTaskLinks.find(l => l.taskId === t.id);
               if (link) {
-                const card = allImportedNodes.find(n => n.id === link.cardId);
-                if (card) {
-                  return { ...t, locationPin: { x: card.x, y: card.y, canvasId: importedData.activeTab || '' } };
+                for (const ws of importedData.workspaces) {
+                  const card = (ws.nodes || []).find(n => n.id === link.cardId);
+                  if (card) {
+                    return { ...t, locationPin: { x: card.x, y: card.y, canvasId: ws.id } };
+                  }
                 }
               }
               return t;
@@ -2280,7 +2290,25 @@ export default function WorkflowApp() {
                 { id: 'tg-research', name: 'Research', order: 3 },
                 { id: 'tg-followup', name: 'Follow-up', order: 4 },
               ]);
-              setCardTaskLinks(defaultProj.cardTaskLinks || []);
+              // Migrate old cardTaskLinks to locationPin on tasks during full backup restore
+              if (Array.isArray(defaultProj.cardTaskLinks) && defaultProj.cardTaskLinks.length > 0) {
+                const restoredWorkspaces = defaultProj.workspaces || [];
+                setTasks(prev => prev.map(t => {
+                  if (t.locationPin) return t;
+                  const link = defaultProj.cardTaskLinks.find(l => l.taskId === t.id);
+                  if (link) {
+                    let foundCanvasId = '';
+                    for (const ws of restoredWorkspaces) {
+                      const card = (ws.nodes || []).find(n => n.id === link.cardId);
+                      if (card) {
+                        foundCanvasId = ws.id;
+                        return { ...t, locationPin: { x: card.x, y: card.y, canvasId: foundCanvasId } };
+                      }
+                    }
+                  }
+                  return t;
+                }));
+              }
             }
           } catch (restoreErr) {
             // Rollback to previous state
@@ -3058,6 +3086,9 @@ export default function WorkflowApp() {
   const addTaskFromCard = (cardId) => {
     const card = nodes.find(n => n.id === cardId);
     if (!card) return;
+    // Duplicate guard: prevent creating another task at the exact same location with same title
+    const isDuplicate = tasks.some(t => t.locationPin && t.locationPin.x === card.x && t.locationPin.y === card.y && t.locationPin.canvasId === activeTab && t.title === (card.title || 'Untitled Task'));
+    if (isDuplicate) return;
     const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const defaultGroup = taskGroups.length > 0 ? [...taskGroups].sort((a, b) => a.order - b.order)[0].id : 'tg-today';
     const newTask = {
@@ -3136,19 +3167,28 @@ export default function WorkflowApp() {
     if (!task || !task.locationPin || !workspaceRef.current) return;
     const { x, y, canvasId } = task.locationPin;
     // Switch canvas tab if needed
-    if (canvasId && canvasId !== activeTab) {
+    const needsTabSwitch = canvasId && canvasId !== activeTab;
+    if (needsTabSwitch) {
       setActiveTab(canvasId);
     }
-    const rect = workspaceRef.current.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    setTransform(prev => ({
-      x: centerX - x * prev.scale,
-      y: centerY - y * prev.scale,
-      scale: prev.scale,
-    }));
-    setFocusedTaskPinId(taskId);
-    setTimeout(() => setFocusedTaskPinId(null), 2000);
+    // Defer centering to allow tab switch to render and update dimensions
+    const centerOnPin = () => {
+      const rect = workspaceRef.current.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      setTransform(prev => ({
+        x: centerX - x * prev.scale,
+        y: centerY - y * prev.scale,
+        scale: prev.scale,
+      }));
+      setFocusedTaskPinId(taskId);
+      setTimeout(() => setFocusedTaskPinId(null), 2000);
+    };
+    if (needsTabSwitch) {
+      requestAnimationFrame(centerOnPin);
+    } else {
+      centerOnPin();
+    }
     // Switch to split mode if in fullscreen to show the canvas
     if (taskPanelMode === 'fullscreen') {
       setTaskPanelMode('split');
