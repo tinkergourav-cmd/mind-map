@@ -7,11 +7,12 @@ import {
   Copy, ArrowUp, ArrowDown, RefreshCw, LayoutList, MonitorSpeaker,
   MoreVertical, ImageIcon, ChevronUp, Scissors, ClipboardPaste,
   Lock, Shield, Eye, EyeOff, GitBranch, Map, Timer,
-  MapPin, Bell, Pencil, MousePointer
+  MapPin, Bell, Pencil, MousePointer, ListTodo
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import PinPanel, { PIN_ICONS } from './PinPanel';
 import ReminderPanel from './ReminderPanel';
+import TaskPanel from './TaskPanel';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -425,6 +426,12 @@ export default function WorkflowApp() {
   const timerIntervalRef = useRef(null);
   const timerNotificationTimerRef = useRef(null);
 
+  // --- Task System States ---
+  const [tasks, setTasks] = useState([]);
+  const [showTaskPanel, setShowTaskPanel] = useState(false);
+  const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);
+  const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);
+
   // --- Multi-Selection States ---
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
   const [selectionBox, setSelectionBox] = useState(null);
@@ -682,6 +689,10 @@ export default function WorkflowApp() {
             // Load reminder data
             const loadedReminders = activeProj.reminders || DEFAULT_REMINDERS;
             setReminders(loadedReminders);
+
+            // Load task data
+            const loadedTasks = activeProj.tasks || [];
+            setTasks(loadedTasks);
             
             // Show workspace-open reminder after a short delay
             setTimeout(() => {
@@ -846,7 +857,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, reminders, tasks, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -858,7 +869,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, reminders, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, reminders, tasks, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1392,6 +1403,20 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleReminderKey);
     return () => window.removeEventListener('keydown', handleReminderKey);
+  }, []);
+
+  // --- T key toggles task panel ---
+  useEffect(() => {
+    const handleTaskKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        setShowTaskPanel(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleTaskKey);
+    return () => window.removeEventListener('keydown', handleTaskKey);
   }, []);
 
   // --- F key toggles timer panel ---
@@ -2038,7 +2063,7 @@ export default function WorkflowApp() {
 
   // --- Import / Export ---
   const exportData = () => {
-    const data = { workspaces, activeTab, nextId };
+    const data = { workspaces, activeTab, nextId, tasks };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2121,6 +2146,7 @@ export default function WorkflowApp() {
           setWorkspaces(importedData.workspaces);
           setActiveTab(importedData.activeTab || importedData.workspaces[0]?.id || '');
           setNextId(importedData.nextId || 10);
+          if (importedData.tasks) setTasks(importedData.tasks);
         } else {
           setErrorMessage("Invalid workflow file format.");
         }
@@ -2174,6 +2200,7 @@ export default function WorkflowApp() {
               setWorkspaces(defaultProj.workspaces || []);
               setActiveTab(defaultProj.activeTab || defaultProj.workspaces?.[0]?.id || '');
               setNextId(defaultProj.nextId || 10);
+              setTasks(defaultProj.tasks || []);
             }
           } catch (restoreErr) {
             // Rollback to previous state
@@ -2456,6 +2483,36 @@ export default function WorkflowApp() {
   // --- Pointer Interactions (Pan, Drag & Resize) ---
   const handlePointerDownMain = (e) => {
     if (e.button !== 0) return;
+
+    if (isSelectingTaskLocation) {
+      const rect = workspaceRef.current.getBoundingClientRect();
+      const canvasX = (e.clientX - rect.left - transform.x) / transform.scale;
+      const canvasY = (e.clientY - rect.top - transform.y) / transform.scale;
+
+      const pinId = `pin-task-${Date.now()}`;
+      const newPin = {
+        id: pinId,
+        name: 'Task Location',
+        canvas_position_x: canvasX,
+        canvas_position_y: canvasY,
+        note: '',
+        color: '#6366f1',
+        icon: '\ud83c\udfaf',
+        visibility_status: true,
+        created_date: new Date().toISOString(),
+      };
+      updateActiveWorkspace(ws => ({
+        pins: [...(ws.pins || []), newPin],
+      }));
+
+      setTasks(prev => prev.map(t => t.id === selectingLocationForTaskId ? { ...t, locationPinId: pinId } : t));
+
+      setIsSelectingTaskLocation(false);
+      setSelectingLocationForTaskId(null);
+      setShowTaskPanel(true);
+      showToast('Task location set');
+      return;
+    }
     
     setOpenColorPicker(null);
     setOpenLinkPicker(null);
@@ -2988,6 +3045,60 @@ export default function WorkflowApp() {
     }));
     setFocusedPinId(pinId);
     setTimeout(() => setFocusedPinId(null), 2000);
+  };
+
+  // --- Task System Functions ---
+  const addTask = (taskData) => {
+    const newTask = {
+      id: `task-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      status: 'todo',
+      sortOrder: tasks.length,
+      ...taskData,
+    };
+    setTasks(prev => [...prev, newTask]);
+  };
+
+  const updateTask = (taskId, updates) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+  };
+
+  const deleteTask = (taskId) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+  };
+
+  const reorderTask = (taskId, direction) => {
+    setTasks(prev => {
+      const task = prev.find(t => t.id === taskId);
+      if (!task) return prev;
+      const isCompleted = task.status === 'done';
+      const sectionTasks = prev.filter(t => (t.status === 'done') === isCompleted).sort((a, b) => a.sortOrder - b.sortOrder);
+      const idx = sectionTasks.findIndex(t => t.id === taskId);
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= sectionTasks.length) return prev;
+      const swapTask = sectionTasks[swapIdx];
+      return prev.map(t => {
+        if (t.id === taskId) return { ...t, sortOrder: swapTask.sortOrder };
+        if (t.id === swapTask.id) return { ...t, sortOrder: task.sortOrder };
+        return t;
+      });
+    });
+  };
+
+  const startLocationSelection = (taskId) => {
+    setIsSelectingTaskLocation(true);
+    setSelectingLocationForTaskId(taskId);
+    setShowTaskPanel(false);
+  };
+
+  const cancelLocationSelection = () => {
+    setIsSelectingTaskLocation(false);
+    setSelectingLocationForTaskId(null);
+    setShowTaskPanel(true);
+  };
+
+  const navigateToTaskLocation = (pinId) => {
+    navigateToPin(pinId);
   };
 
   const createGroup = (clientX, clientY) => {
@@ -4115,6 +4226,13 @@ export default function WorkflowApp() {
                   className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showPinPanel ? 'bg-rose-100 text-rose-700 border border-rose-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
                 >
                   <MapPin className="w-3.5 h-3.5" /> Pins
+                </button>
+                <button
+                  onClick={() => setShowTaskPanel(!showTaskPanel)}
+                  title="Tasks (T)"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showTaskPanel ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                >
+                  <ListTodo className="w-3.5 h-3.5" /> Tasks
                 </button>
                 <button
                   onClick={() => setShowReminderPanel(!showReminderPanel)}
@@ -5368,6 +5486,24 @@ export default function WorkflowApp() {
             }}
             onEnableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: true, nextReminderAt: Date.now() + r.frequency * 60000 }))); }}
             onDisableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: false, nextReminderAt: null }))); }}
+          />
+        )}
+
+        {/* --- Task Panel --- */}
+        {showTaskPanel && viewMode === 'canvas' && (
+          <TaskPanel
+            tasks={tasks}
+            showPanel={showTaskPanel}
+            onClose={() => setShowTaskPanel(false)}
+            onAddTask={addTask}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
+            onReorderTask={reorderTask}
+            onStartLocationSelection={startLocationSelection}
+            onNavigateToLocation={navigateToTaskLocation}
+            onCancelLocationSelection={cancelLocationSelection}
+            isSelectingLocation={isSelectingTaskLocation}
+            selectingLocationForTaskId={selectingLocationForTaskId}
           />
         )}
 

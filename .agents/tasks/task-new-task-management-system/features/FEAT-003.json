@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Integrate TaskPanel into App.jsx with state management, persistence, location pin workflow, backup/export/import support, and toolbar toggle button",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Add import for TaskPanel at the top of App.jsx: `import TaskPanel from './TaskPanel';`",
     "Add import for ListTodo (or CheckSquare) icon from lucide-react for the toolbar button.",
