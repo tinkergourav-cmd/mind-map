@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix task ordering system and group filtering bug - these are critical bugs that must be resolved before redesigning the UI",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In src/App.jsx, fix the reorderTask function (line ~3099). Current issue: when two tasks have the same sortOrder (e.g., both 0 or both undefined), swapping them produces no visible change. Fix: instead of swapping sortOrder values, reassign sequential sortOrder values to the section after swap. Also ensure sortOrder is always initialized - existing tasks loaded from localStorage may have sortOrder=0 or undefined for all tasks.",
     "In src/App.jsx, fix the addTask function (line ~3066). The sortOrder calculation `Math.max(0, ...prev.map(t => (t.sortOrder || 0))) + 1` works for new tasks but does not account for tasks within the same group/section needing sequential ordering. Ensure each new task gets a unique sortOrder.",
@@ -22,5 +22,5 @@
     "Run `npm run build` to confirm no compilation errors"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Fixed reorderTask by re-indexing all section tasks with sequential sortOrder (1,2,3...) before swapping positions. Applied task normalization (groupId default 'inbox', sortOrder assignment) at all setTasks entry points: initial load (line ~696), project switch (line ~1778), single-file import (line ~2158), and full backup import (line ~2217). The normalizeTasks helper is also defined as a named function for future use. Build passes cleanly."
 }
