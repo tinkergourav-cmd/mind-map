@@ -1,0 +1,19 @@
+{
+  "project_type": "React + Vite SPA (ThoughtFlow mind-map app)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite with npm",
+  "test_framework": "None (no test files found)",
+  "build_command": "npm run build",
+  "test_command": null,
+  "verification_instructions": "Run `npm run build` in the project root. The build must succeed with no errors.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "No test framework in this project. Verification is build-only.",
+  "contribution_requirements": "N/A - no CONTRIBUTING.md found",
+  "key_patterns": "State is managed via React useState hooks in App.jsx. Data is persisted to localStorage under 'nexus-app-state'. Task-card linking uses a separate `cardTaskLinks` array of {cardId, taskId} objects. TaskPanel receives props from App.jsx. Node context menu in App.jsx allows 'Add to Tasks' action.",
+  "relevant_files": [
+    "src/App.jsx",
+    "src/TaskPanel.jsx"
+  ],
+  "directory_structure": "src/ contains all source: App.jsx (main component, 5900+ lines), TaskPanel.jsx, PinPanel.jsx, ReminderPanel.jsx, MiniMap.jsx, main.jsx, index.css"
+}

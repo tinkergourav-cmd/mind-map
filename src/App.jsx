@@ -403,7 +403,6 @@ export default function WorkflowApp() {
     { id: 'tg-research', name: 'Research', order: 3 },
     { id: 'tg-followup', name: 'Follow-up', order: 4 },
   ]);
-  const [cardTaskLinks, setCardTaskLinks] = useState([]);
   const [showTaskPanel, setShowTaskPanel] = useState(false);
   const [taskPanelMode, setTaskPanelMode] = useState('split');
 
@@ -696,7 +695,6 @@ export default function WorkflowApp() {
             // Load task data
             if (activeProj.tasks) setTasks(activeProj.tasks);
             if (activeProj.taskGroups) setTaskGroups(activeProj.taskGroups);
-            if (activeProj.cardTaskLinks) setCardTaskLinks(activeProj.cardTaskLinks);
 
             // Load reminder data
             const loadedReminders = activeProj.reminders || DEFAULT_REMINDERS;
@@ -865,7 +863,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -877,7 +875,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, tasks, taskGroups, reminders, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1363,18 +1361,11 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleMiniMapKey);
   }, []);
 
-  // --- T key toggles task panel, Shift+T links focused card to tasks ---
+  // --- T key toggles task panel ---
   useEffect(() => {
     const handleTaskKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === 'T' && e.shiftKey) {
-        e.preventDefault();
-        if (focusedNodeId) {
-          addTaskFromCardRef.current(focusedNodeId);
-        }
-        return;
-      }
       if ((e.key === 't' || e.key === 'T') && !e.shiftKey) {
         e.preventDefault();
         setShowTaskPanel(prev => !prev);
@@ -1382,7 +1373,7 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleTaskKey);
     return () => window.removeEventListener('keydown', handleTaskKey);
-  }, [focusedNodeId]);
+  }, []);
 
   // --- P key toggles pin visibility, PP (double-press) toggles pin panel, Shift+P drops pin at viewport center ---
   useEffect(() => {
@@ -1790,7 +1781,6 @@ export default function WorkflowApp() {
       { id: 'tg-research', name: 'Research', order: 3 },
       { id: 'tg-followup', name: 'Follow-up', order: 4 },
     ]);
-    setCardTaskLinks(target.cardTaskLinks || []);
     setReminders(target.reminders || DEFAULT_REMINDERS);
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
@@ -1841,7 +1831,6 @@ export default function WorkflowApp() {
       { id: 'tg-research', name: 'Research', order: 3 },
       { id: 'tg-followup', name: 'Follow-up', order: 4 },
     ]);
-    setCardTaskLinks(target.cardTaskLinks || []);
     setReminders(target.reminders || DEFAULT_REMINDERS);
     // Default project is always password-free
     if (isDefault) {
@@ -2096,7 +2085,7 @@ export default function WorkflowApp() {
 
   // --- Import / Export ---
   const exportData = () => {
-    const data = { workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks };
+    const data = { workspaces, activeTab, nextId, tasks, taskGroups };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2185,9 +2174,6 @@ export default function WorkflowApp() {
           if (Array.isArray(importedData.taskGroups) && importedData.taskGroups.every(g => g && g.id && g.name != null)) {
             setTaskGroups(importedData.taskGroups);
           }
-          if (Array.isArray(importedData.cardTaskLinks) && importedData.cardTaskLinks.every(l => l && l.cardId && l.taskId)) {
-            setCardTaskLinks(importedData.cardTaskLinks);
-          }
         } else {
           setErrorMessage("Invalid workflow file format.");
         }
@@ -2249,7 +2235,6 @@ export default function WorkflowApp() {
                 { id: 'tg-research', name: 'Research', order: 3 },
                 { id: 'tg-followup', name: 'Follow-up', order: 4 },
               ]);
-              setCardTaskLinks(defaultProj.cardTaskLinks || []);
             }
           } catch (restoreErr) {
             // Rollback to previous state
@@ -3000,34 +2985,12 @@ export default function WorkflowApp() {
   useEffect(() => { addNodeRef.current = addNode; });
 
   // --- Task System Functions ---
-  const addTaskFromCard = (cardId) => {
-    const card = nodes.find(n => n.id === cardId);
-    if (!card) return;
-    // Prevent duplicate task creation for the same card
-    if (cardTaskLinks.some(l => l.cardId === cardId)) return;
-    const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const defaultGroup = taskGroups.length > 0 ? [...taskGroups].sort((a, b) => a.order - b.order)[0].id : 'tg-today';
-    const newTask = {
-      id: taskId,
-      title: card.title || 'Untitled Task',
-      status: 'not_started',
-      groupId: defaultGroup,
-      note: '',
-      createdAt: Date.now(),
-    };
-    setTasks(prev => [...prev, newTask]);
-    setCardTaskLinks(prev => [...prev, { cardId, taskId }]);
-    // Open task panel if not open
-    if (!showTaskPanel) setShowTaskPanel(true);
-  };
-
   const updateTask = (taskId, updates) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
   };
 
   const deleteTask = (taskId) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    setCardTaskLinks(prev => prev.filter(l => l.taskId !== taskId));
   };
 
   const toggleTaskStatus = (taskId) => {
@@ -3076,26 +3039,6 @@ export default function WorkflowApp() {
 
   const updateTaskGroup = (groupId, updates) => {
     setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...updates } : g));
-  };
-
-  const locateCard = (cardId) => {
-    const card = nodes.find(n => n.id === cardId);
-    if (!card || !workspaceRef.current) return;
-    const rect = workspaceRef.current.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const nodeWidth = getNodeDimensions(card).width;
-    setTransform(prev => ({
-      x: centerX - card.x * prev.scale - (nodeWidth * prev.scale) / 2,
-      y: centerY - card.y * prev.scale - (140 * prev.scale) / 2,
-      scale: prev.scale,
-    }));
-    bringToFront(cardId);
-    setFocusedNodeId(cardId);
-    // Switch to split mode if in fullscreen to show the canvas
-    if (taskPanelMode === 'fullscreen') {
-      setTaskPanelMode('split');
-    }
   };
 
   // --- Pin System Functions ---
@@ -3164,9 +3107,6 @@ export default function WorkflowApp() {
     setFocusedPinId(pinId);
     setTimeout(() => setFocusedPinId(null), 2000);
   };
-
-  const addTaskFromCardRef = useRef(addTaskFromCard);
-  useEffect(() => { addTaskFromCardRef.current = addTaskFromCard; });
 
   const createGroup = (clientX, clientY) => {
     takeSnapshot();
@@ -4863,17 +4803,6 @@ export default function WorkflowApp() {
                     </div>
                   )}
 
-                  {/* Task status indicator */}
-                  {(() => {
-                    const link = cardTaskLinks.find(l => l.cardId === node.id);
-                    if (!link) return null;
-                    const linkedTask = tasks.find(t => t.id === link.taskId);
-                    if (!linkedTask) return null;
-                    const statusColors = { not_started: 'bg-gray-400', in_progress: 'bg-blue-500', completed: 'bg-green-500', blocked: 'bg-amber-500' };
-                    const dotColor = statusColors[linkedTask.status] || 'bg-gray-400';
-                    return <div className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ${dotColor}`} title={`Task: ${linkedTask.status.replace('_', ' ')}`} />;
-                  })()}
-
                   {/* Hover toolbar */}
                   <div className="absolute -top-8 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-md shadow border border-slate-200 px-1 py-0.5" onPointerDown={(e) => e.stopPropagation()}>
                     <button 
@@ -5237,9 +5166,6 @@ export default function WorkflowApp() {
               <button className="w-full text-left px-4 py-2 hover:bg-blue-50 text-xs font-semibold text-slate-700 flex items-center" onClick={() => { exportSelectedNodes([nodeContextMenu.nodeId]); setNodeContextMenu(null); }}>
                 <Download className="w-3.5 h-3.5 mr-2 text-blue-500" /> Export Branch
               </button>
-              <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-slate-700 flex items-center" onClick={() => { addTaskFromCard(nodeContextMenu.nodeId); setNodeContextMenu(null); }}>
-                <CheckSquare className="w-3.5 h-3.5 mr-2 text-emerald-500" /> Add to Tasks
-              </button>
               
               <div className="h-px bg-slate-150 my-1 w-full" />
               
@@ -5539,8 +5465,6 @@ export default function WorkflowApp() {
           <TaskPanel
             tasks={tasks}
             taskGroups={taskGroups}
-            cardTaskLinks={cardTaskLinks}
-            nodes={nodes}
             showTaskPanel={showTaskPanel}
             taskPanelMode={taskPanelMode}
             setTaskPanelMode={setTaskPanelMode}
@@ -5553,7 +5477,6 @@ export default function WorkflowApp() {
             onAddGroup={addTaskGroup}
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroup={updateTaskGroup}
-            onLocateCard={locateCard}
           />
         )}
 

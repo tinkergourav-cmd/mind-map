@@ -1,0 +1,43 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Remove all task-to-card linking functionality from TaskPanel.jsx and App.jsx while keeping the task system (create, edit, delete, complete, persist) fully functional.",
+  "status": "in_progress",
+  "steps": [
+    "In src/TaskPanel.jsx: Remove `cardTaskLinks`, `nodes`, and `onLocateCard` from the component props destructuring (line 28-30).",
+    "In src/TaskPanel.jsx: Remove the `getLinkedCard` helper function (lines 53-56).",
+    "In src/TaskPanel.jsx: Remove the `Circle` icon import since it is only used for linked card chips (line 4).",
+    "In src/TaskPanel.jsx: In `renderListRow`, remove the `const linkedCard = getLinkedCard(task.id);` variable and the entire 'Linked Card Chip' button block (lines 159-170 approximately).",
+    "In src/TaskPanel.jsx: In `renderCardView`, remove the `const linkedCard = getLinkedCard(task.id);` variable and the linked card button block (lines 361-365 approximately).",
+    "In src/App.jsx: Remove the `const [cardTaskLinks, setCardTaskLinks] = useState([]);` state declaration (line 406).",
+    "In src/App.jsx: Remove the `addTaskFromCard` function entirely (lines 3003-3021). It creates a task from a card and adds a cardTaskLink.",
+    "In src/App.jsx: Remove the `addTaskFromCardRef` useRef and its useEffect (lines 3168-3169).",
+    "In src/App.jsx: Remove the `locateCard` function entirely (lines 3081-3097).",
+    "In src/App.jsx: In the `deleteTask` function, remove the line `setCardTaskLinks(prev => prev.filter(l => l.taskId !== taskId));` (only remove the cardTaskLinks line, keep the rest of deleteTask).",
+    "In src/App.jsx: In the Shift+T keyboard handler useEffect (lines 1366-1385), remove the Shift+T branch that calls `addTaskFromCardRef.current(focusedNodeId)`. Keep the plain T handler that toggles the task panel.",
+    "In src/App.jsx: In the node context menu UI, remove the 'Add to Tasks' button that calls `addTaskFromCard(nodeContextMenu.nodeId)` (around line 5240).",
+    "In src/App.jsx: In the TaskPanel component usage (around line 5537), remove the `cardTaskLinks`, `nodes`, and `onLocateCard` props.",
+    "In src/App.jsx: In the `exportData` function, remove `cardTaskLinks` from the exported data object (line 2099).",
+    "In src/App.jsx: In the `handleImport` function, remove the block that imports `cardTaskLinks` (the `if (Array.isArray(importedData.cardTaskLinks)...)` block around line 2193).",
+    "In src/App.jsx: In the auto-save useEffect, remove `cardTaskLinks` from the project state that gets saved (line 868) and from the dependency array (line 880).",
+    "In src/App.jsx: In the initialization useEffect, remove the line `if (activeProj.cardTaskLinks) setCardTaskLinks(activeProj.cardTaskLinks);` (line 699).",
+    "In src/App.jsx: In the `importAllData` function, remove the `setCardTaskLinks(defaultProj.cardTaskLinks || []);` line (around line 2253).",
+    "In src/App.jsx: In both project switching functions (around lines 1793 and 1843), remove the `setCardTaskLinks(target.cardTaskLinks || []);` lines.",
+    "In src/App.jsx: Remove the `CheckSquare` import from lucide-react ONLY if it is not used elsewhere. (Check first - it is likely used for the task panel toggle button in the toolbar, so it should be kept.)",
+    "After all removals, verify no remaining references to `cardTaskLinks`, `addTaskFromCard`, `getLinkedCard`, `locateCard`, or `onLocateCard` exist in the codebase."
+  ],
+  "acceptance_criteria": [
+    "Running `npm run build` succeeds with no errors",
+    "No references to `cardTaskLinks`, `addTaskFromCard`, `getLinkedCard`, `locateCard`, or `onLocateCard` remain in source files",
+    "The TaskPanel component still renders correctly with its remaining props (tasks, taskGroups, showTaskPanel, taskPanelMode, etc.)",
+    "Task CRUD operations (create via standalone mechanism, edit, delete, complete) remain intact",
+    "Task persistence to localStorage still works (tasks and taskGroups are still saved)",
+    "Import/export still works for tasks and taskGroups (just without cardTaskLinks)"
+  ],
+  "verification": [
+    "Run `cd /projects/sandbox/mind-map && npm run build` and confirm exit code 0",
+    "Run `grep -rn 'cardTaskLinks\\|addTaskFromCard\\|getLinkedCard\\|onLocateCard' src/` and confirm no matches"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

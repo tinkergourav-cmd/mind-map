@@ -1,0 +1,7 @@
+{
+  "task_id": "task-remove-task-card-linking",
+  "task_description": "Remove the task-to-card linking feature completely while keeping the task system (create, edit, delete, complete, persist) fully functional. Remove: link task to card, unlink task from card, store card reference inside task, jump to card from task, any UI related to task-card connection, any task-card connection logic during import/export.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   X, CheckSquare, ChevronUp, ChevronDown,
-  Maximize2, Minimize2, Circle, MessageSquare,
+  Maximize2, Minimize2, MessageSquare,
   Plus, Trash2, Palette, LayoutList, Grid3X3, Filter,
   Pencil
 } from 'lucide-react';
@@ -25,9 +25,9 @@ const GROUP_COLORS = [
 ];
 
 export default function TaskPanel({
-  tasks, taskGroups, cardTaskLinks, nodes, showTaskPanel, taskPanelMode,
+  tasks, taskGroups, showTaskPanel, taskPanelMode,
   setTaskPanelMode, onClose, onUpdateTask, onDeleteTask, onToggleTaskStatus,
-  onMoveTaskToGroup, onReorderGroups, onAddGroup, onDeleteGroup, onUpdateGroup, onLocateCard,
+  onMoveTaskToGroup, onReorderGroups, onAddGroup, onDeleteGroup, onUpdateGroup,
 }) {
   const [viewMode, setViewMode] = useState('list');
   const [activeGroupTab, setActiveGroupTab] = useState('all');
@@ -49,12 +49,6 @@ export default function TaskPanel({
   const sortedGroups = [...taskGroups].sort((a, b) => a.order - b.order);
 
   const getTasksForGroup = (groupId) => tasks.filter(t => t.groupId === groupId);
-
-  const getLinkedCard = (taskId) => {
-    const link = cardTaskLinks.find(l => l.taskId === taskId);
-    if (!link) return null;
-    return nodes.find(n => n.id === link.cardId) || null;
-  };
 
   const getFilteredTasks = () => {
     let filtered = tasks;
@@ -114,7 +108,6 @@ export default function TaskPanel({
 
   // --- LIST VIEW TASK ROW ---
   const renderListRow = (task) => {
-    const linkedCard = getLinkedCard(task.id);
     const statusOption = STATUS_OPTIONS.find(s => s.value === task.status) || STATUS_OPTIONS[0];
     const isCompleted = task.status === 'completed';
     const isExpanded = expandedRows[task.id];
@@ -155,18 +148,6 @@ export default function TaskPanel({
             >
               {task.title || 'Untitled'}
             </span>
-          )}
-
-          {/* Linked Card Chip */}
-          {linkedCard && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onLocateCard(linkedCard.id); }}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-[10px] font-medium text-indigo-700 hover:bg-indigo-100 transition-colors shrink-0 max-w-[100px]"
-              title="Locate card"
-            >
-              <Circle className="w-2 h-2 shrink-0" />
-              <span className="truncate">{linkedCard.title || 'Card'}</span>
-            </button>
           )}
 
           {/* Status dot */}
@@ -351,18 +332,12 @@ export default function TaskPanel({
             </div>
             <div className="divide-y divide-slate-100">
               {groupTasks.map(task => {
-                  const linkedCard = getLinkedCard(task.id);
                   const statusOption = STATUS_OPTIONS.find(s => s.value === task.status) || STATUS_OPTIONS[0];
                   const isCompleted = task.status === 'completed';
                   return (
                     <div key={task.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/60 transition-colors group">
                       <button onClick={() => onToggleTaskStatus(task.id)} className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${isCompleted ? 'bg-green-500 border-green-500' : 'border-slate-300 hover:border-slate-400'}`}>{isCompleted && <CheckSquare className="w-2.5 h-2.5 text-white" />}</button>
                       <input type="text" value={task.title} onChange={(e) => onUpdateTask(task.id, { title: e.target.value })} className={`flex-1 min-w-0 bg-transparent text-xs font-medium text-slate-700 focus:outline-none focus:bg-white/80 rounded px-0.5 truncate ${isCompleted ? 'line-through text-slate-400' : ''}`} placeholder="Task title..." />
-                      {linkedCard && (
-                        <button onClick={() => onLocateCard(linkedCard.id)} className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-[9px] font-medium text-indigo-700 hover:bg-indigo-100 transition-colors shrink-0 max-w-[80px]" title="Locate card">
-                          <Circle className="w-2 h-2 shrink-0" /><span className="truncate">{linkedCard.title || 'Card'}</span>
-                        </button>
-                      )}
                       <select value={task.status} onChange={(e) => onUpdateTask(task.id, { status: e.target.value })} className="text-[9px] font-medium bg-transparent border border-slate-200 rounded px-1 py-0.5 text-slate-500 focus:outline-none shrink-0">{STATUS_OPTIONS.map(opt => (<option key={opt.value} value={opt.value}>{opt.abbr}</option>))}</select>
                       <select value={task.groupId} onChange={(e) => onMoveTaskToGroup(task.id, e.target.value)} className="text-[9px] font-medium bg-transparent border border-slate-200 rounded px-1 py-0.5 text-slate-500 focus:outline-none shrink-0 max-w-[60px]">{sortedGroups.map(g => (<option key={g.id} value={g.id}>{g.name}</option>))}</select>
                       {task.note && <MessageSquare className="w-3 h-3 text-slate-400 shrink-0" />}
