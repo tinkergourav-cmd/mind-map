@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add Edit Mode toggle to the mind-map application. When Edit Mode is OFF, clicking anywhere on a card selects it immediately (no accidental content editing). When Edit Mode is ON, the current behavior is preserved (clicking title/content enters editing mode).",
+  "status": "in_progress",
+  "steps": [
+    "Step 1: Add `editMode` state and `Pencil` icon import. In src/App.jsx, add `import { Pencil } from 'lucide-react'` to the existing lucide import statement (or `PenLine` / `MousePointer` for the off-state icon). Add state: `const [editMode, setEditMode] = useState(true);` near the other UI state declarations (around line 339-440). Default is `true` so existing behavior is preserved on load.",
+    "Step 2: Add the Edit Mode toggle button to the floating action bar (FAB). The FAB is a vertical column of buttons rendered around line 5067. Add the toggle button BEFORE the Timer button, separated by a divider `<div className='h-px w-5 bg-slate-200 my-0.5' />`. The button should visually indicate ON (indigo active style) vs OFF (slate inactive style), matching the pattern used by the Mini Map and Task Panel toggles. Use `Pencil` icon for edit mode, or `MousePointer` for selection mode. The button title should say 'Edit Mode (E)' or similar.",
+    "Step 3: Conditionally disable content editing when editMode is OFF. In the node rendering section (around lines 4770-4830), wrap the title click handler and content click handler in editMode checks: (a) For the title div's onClick (line ~4787): change `onClick={(e) => { e.stopPropagation(); setEditingTextNode('title-' + node.id); }}` to only call setEditingTextNode when `editMode` is true. When editMode is false, the click should not enter editing. (b) For the content div's onClick (line ~4812): change `onClick={() => { takeSnapshot(); setEditingTextNode(node.id); }}` to only trigger when editMode is true. (c) For the '+ Add notes...' area onClick (line ~4820): same treatment - only enter editing when editMode is true. (d) Also handle the `onPointerDown={(e) => e.stopPropagation()}` on the content area (line ~4802): when editMode is OFF, do NOT stopPropagation so the pointer event reaches the card wrapper and triggers dragging/selection.",
+    "Step 4: When editMode is OFF, ensure the card's onPointerDown handler is not blocked by inner elements. Currently, the title div and content areas call `e.stopPropagation()` on pointerDown, preventing the card wrapper's drag logic from activating. When editMode is OFF, these inner stopPropagation calls should be removed/conditional so the entire card surface triggers the wrapper's onPointerDown (which handles dragging and selection).",
+    "Step 5: Add keyboard shortcut 'E' to toggle edit mode. Follow the existing keyboard shortcut pattern (e.g., the timer 'F' key handler around line 1435-1455). Add a useEffect that listens for the 'e' key (when not in input/textarea/contentEditable), toggling editMode state. This provides a quick way to switch modes.",
+    "Step 6: When editMode is toggled OFF, clear any active editing state. If `editingTextNode` is set when the user toggles editMode OFF, set it to null to exit any in-progress editing cleanly."
+  ],
+  "acceptance_criteria": [
+    "A visible toggle button appears in the floating action bar that shows the current edit mode state (ON/OFF)",
+    "When Edit Mode is ON: clicking a card's title enters title editing mode (existing behavior preserved)",
+    "When Edit Mode is ON: clicking a card's content enters content editing mode (existing behavior preserved)",
+    "When Edit Mode is OFF: clicking anywhere on a card selects it (sets focusedNodeId) without entering editing",
+    "When Edit Mode is OFF: dragging a card works from anywhere on the card surface including title and content areas",
+    "When Edit Mode is OFF: the entire card acts as a drag/selection target",
+    "Pressing 'E' key toggles the edit mode (when not in an input field)",
+    "The build succeeds with no errors: `npm run build` passes"
+  ],
+  "verification": [
+    "Run `cd /projects/sandbox/mind-map && npm install && npm run build` to confirm the build succeeds without errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
