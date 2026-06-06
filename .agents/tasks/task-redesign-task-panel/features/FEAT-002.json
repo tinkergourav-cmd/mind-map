@@ -1,0 +1,25 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Add group colors support - allow assigning a color to each task group for visual differentiation",
+  "status": "in_progress",
+  "steps": [
+    "In src/App.jsx, update the taskGroups state structure. The default group should include a `color` field: `{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }`. Define a GROUP_COLORS constant array with color options: blue, green, orange, purple, rose, teal, amber, indigo, pink, slate. Each color maps to Tailwind classes for: header background, badge background+text, and a left-border indicator.",
+    "In src/App.jsx, update the addTaskGroup function (line ~3134) to accept and store a color parameter. Default to a rotating color if none specified. Update the renameTaskGroup function to also accept color updates, or add a separate updateTaskGroupColor function.",
+    "In src/App.jsx, add migration logic for existing taskGroups that lack a `color` field - assign colors sequentially from the palette when loading from localStorage.",
+    "Export the GROUP_COLORS constant from a shared location (can be defined at the top of both TaskPanel.jsx and the new FullTaskManager.jsx, or in App.jsx and passed as prop).",
+    "The color will be used in FEAT-003 and FEAT-004 for rendering group headers, badges, and task row indicators."
+  ],
+  "acceptance_criteria": [
+    "Task groups have a color field that persists across refresh",
+    "New groups are assigned a color automatically",
+    "Existing groups without color get assigned one during migration",
+    "The color is included in export/import data (already covered by taskGroups serialization)",
+    "npm run build succeeds"
+  ],
+  "verification": [
+    "Run `npm run build` to confirm no compilation errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

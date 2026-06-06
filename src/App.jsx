@@ -13,6 +13,7 @@ import MiniMap from './MiniMap';
 import PinPanel, { PIN_ICONS } from './PinPanel';
 import ReminderPanel from './ReminderPanel';
 import TaskPanel from './TaskPanel';
+import { GROUP_COLORS } from './taskConstants';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -428,7 +429,7 @@ export default function WorkflowApp() {
 
   // --- Task System States ---
   const [tasks, setTasks] = useState([]);
-  const [taskGroups, setTaskGroups] = useState([{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
+  const [taskGroups, setTaskGroups] = useState([{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }]);
   const [showTaskPanel, setShowTaskPanel] = useState(false);
   const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);
   const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);
@@ -698,8 +699,11 @@ export default function WorkflowApp() {
               groupId: t.groupId || 'inbox',
               sortOrder: t.sortOrder || (i + 1),
             })));
-            const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
-            setTaskGroups(loadedTaskGroups);
+            const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+            setTaskGroups(loadedTaskGroups.map((g, i) => ({
+              ...g,
+              color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+            })));
             
             // Show workspace-open reminder after a short delay
             setTimeout(() => {
@@ -1780,7 +1784,11 @@ export default function WorkflowApp() {
       groupId: t.groupId || 'inbox',
       sortOrder: t.sortOrder || (i + 1),
     })));
-    setTaskGroups(target.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
+    const switchedTaskGroups = target.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+    setTaskGroups(switchedTaskGroups.map((g, i) => ({
+      ...g,
+      color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+    })));
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
     setIsAuthenticated(true);
@@ -2164,7 +2172,10 @@ export default function WorkflowApp() {
             groupId: t.groupId || 'inbox',
             sortOrder: t.sortOrder || (i + 1),
           })));
-          if (importedData.taskGroups) setTaskGroups(importedData.taskGroups);
+          if (importedData.taskGroups) setTaskGroups(importedData.taskGroups.map((g, i) => ({
+            ...g,
+            color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+          })));
         } else {
           setErrorMessage("Invalid workflow file format.");
         }
@@ -2223,7 +2234,11 @@ export default function WorkflowApp() {
                 groupId: t.groupId || 'inbox',
                 sortOrder: t.sortOrder || (i + 1),
               })));
-              setTaskGroups(defaultProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
+              const restoredTaskGroups = defaultProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+              setTaskGroups(restoredTaskGroups.map((g, i) => ({
+                ...g,
+                color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+              })));
             }
           } catch (restoreErr) {
             // Rollback to previous state
@@ -3158,12 +3173,14 @@ export default function WorkflowApp() {
   };
 
   // --- Task Group CRUD ---
-  const addTaskGroup = (name) => {
+  const addTaskGroup = (name, color) => {
     setTaskGroups(prev => {
+      const assignedColor = color || GROUP_COLORS[prev.length % GROUP_COLORS.length].id;
       const newGroup = {
         id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         name,
         sortOrder: Math.max(0, ...prev.map(g => (g.sortOrder || 0))) + 1,
+        color: assignedColor,
       };
       return [...prev, newGroup];
     });
@@ -3171,6 +3188,10 @@ export default function WorkflowApp() {
 
   const renameTaskGroup = (groupId, newName) => {
     setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: newName } : g));
+  };
+
+  const updateTaskGroupColor = (groupId, color) => {
+    setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, color } : g));
   };
 
   const deleteTaskGroup = (groupId) => {
@@ -5588,6 +5609,7 @@ export default function WorkflowApp() {
             onAddGroup={addTaskGroup}
             onRenameGroup={renameTaskGroup}
             onDeleteGroup={deleteTaskGroup}
+            onUpdateGroupColor={updateTaskGroupColor}
           />
         )}
 
