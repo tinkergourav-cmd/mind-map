@@ -7,7 +7,7 @@ import {
   Copy, ArrowUp, ArrowDown, RefreshCw, LayoutList, MonitorSpeaker,
   MoreVertical, ImageIcon, ChevronUp, Scissors, ClipboardPaste,
   Lock, Shield, Eye, EyeOff, GitBranch, Map, Timer,
-  CheckSquare, ListTodo, MapPin, Bell
+  CheckSquare, ListTodo, MapPin, Bell, Pencil, MousePointer
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import TaskPanel from './TaskPanel';
@@ -464,6 +464,9 @@ export default function WorkflowApp() {
   const [passwordEnabled, setPasswordEnabled] = useState(false);
   const [storedPassword, setStoredPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // --- Edit Mode ---
+  const [editMode, setEditMode] = useState(true);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showGatePassword, setShowGatePassword] = useState(false);
@@ -1443,6 +1446,23 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleTimerKey);
     return () => window.removeEventListener('keydown', handleTimerKey);
+  }, []);
+
+  // --- E key toggles edit mode ---
+  useEffect(() => {
+    const handleEditModeKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        setEditMode(prev => {
+          if (prev) setEditingTextNode(null);
+          return !prev;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleEditModeKey);
+    return () => window.removeEventListener('keydown', handleEditModeKey);
   }, []);
 
   // --- Reminder Scheduling Engine ---
@@ -4784,7 +4804,8 @@ export default function WorkflowApp() {
                   ) : (
                     <div
                       className="font-bold text-sm text-slate-800 px-1 rounded cursor-grab active:cursor-grabbing line-clamp-2 break-words min-h-[1.25rem]"
-                      onClick={(e) => { e.stopPropagation(); setEditingTextNode(`title-${node.id}`); }}
+                      onClick={(e) => { e.stopPropagation(); if (editMode) setEditingTextNode(`title-${node.id}`); }}
+                      onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}
                       title={node.title || 'Enter Title...'}
                     >
                       {node.title || <span className="text-slate-400">Enter Title...</span>}
@@ -4793,7 +4814,7 @@ export default function WorkflowApp() {
 
                   {/* Content */}
                   {(node.content || editingTextNode === node.id) ? (
-                    <div className="mt-2 flex-1" onPointerDown={(e) => e.stopPropagation()}>
+                    <div className="mt-2 flex-1" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}>
                       {editingTextNode === node.id ? (
                         <textarea 
                           autoFocus
@@ -4805,8 +4826,8 @@ export default function WorkflowApp() {
                         />
                       ) : (
                         <div 
-                          onClick={() => { takeSnapshot(); setEditingTextNode(node.id); }}
-                          className="w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar cursor-text whitespace-pre-wrap"
+                          onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
+                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar whitespace-pre-wrap ${editMode ? 'cursor-text' : 'cursor-default'}`}
                           title="Click to edit content"
                         >
                           {renderLinks(node.content)}
@@ -4815,9 +4836,9 @@ export default function WorkflowApp() {
                     </div>
                   ) : (
                     <div 
-                      className="mt-1 cursor-text"
-                      onClick={(e) => { e.stopPropagation(); takeSnapshot(); setEditingTextNode(node.id); }}
-                      onPointerDown={(e) => e.stopPropagation()}
+                      className={`mt-1 ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                      onClick={(e) => { if (editMode) { e.stopPropagation(); takeSnapshot(); setEditingTextNode(node.id); } }}
+                      onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}
                     >
                       <span className="text-slate-400 italic text-xs">+ Add notes...</span>
                     </div>
@@ -4827,7 +4848,7 @@ export default function WorkflowApp() {
                   {node.linkToTab && (
                     <button 
                       onClick={() => { const target = workspaces.find(w => w.id === node.linkToTab); if (target) setActiveTab(target.id); }}
-                      onPointerDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}
                       className="flex items-center justify-between px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-md border border-indigo-200/80 transition-all w-full mt-2"
                     >
                       <span className="flex items-center gap-1"><ExternalLink className="w-3 h-3 text-indigo-600" /> Portal</span>
@@ -5067,6 +5088,19 @@ export default function WorkflowApp() {
 
             {/* Single vertical button column */}
             <div className="flex flex-col items-center bg-white rounded-lg shadow-lg border border-slate-200 p-1 gap-0.5">
+              <button
+                onClick={() => {
+                  setEditMode(prev => {
+                    if (prev) setEditingTextNode(null);
+                    return !prev;
+                  });
+                }}
+                className={`p-1.5 sm:p-2 rounded-md transition-colors ${editMode ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-100'}`}
+                title="Edit Mode (E)"
+              >
+                {editMode ? <Pencil className="w-4 h-4 sm:w-5 sm:h-5" /> : <MousePointer className="w-4 h-4 sm:w-5 sm:h-5" />}
+              </button>
+              <div className="h-px w-5 bg-slate-200 my-0.5" />
               <button
                 onClick={() => { setShowTimer(prev => !prev); if (timerDone) setTimerDone(false); }}
                 className={`p-1.5 sm:p-2 rounded-md transition-colors ${showTimer ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-100'} ${timerDone ? 'animate-pulse ring-2 ring-orange-400' : ''}`}

@@ -1,0 +1,18 @@
+{
+  "project_type": "React + Vite single-page application (mind-map / card-based workspace tool)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite 6 with @vitejs/plugin-react, Tailwind CSS, PostCSS",
+  "test_framework": "None - no test infrastructure exists in this project",
+  "build_command": "npm run build",
+  "test_command": "npm run build",
+  "verification_instructions": "Run `npm run build` to confirm no build errors. Manually verify the toggle button appears in the floating action bar and that card editing behavior changes based on the toggle state.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "OPEN_INTERNET - full network access available. No test framework exists, validation is through build success.",
+  "contribution_requirements": "No CONTRIBUTING.md found. Follow existing code patterns in App.jsx.",
+  "key_patterns": "All application logic is in a single App.jsx file (5876 lines). State is managed with React useState hooks. The floating action bar (FAB) is a vertical column of icon buttons at the bottom-right of the canvas. Card editing is triggered by clicking title/content areas which sets `editingTextNode` state. Card selection/dragging is handled via `onPointerDown` on the card wrapper which sets `draggingNode`. A card click (no drag movement < 5px) sets `focusedNodeId`. The `editingTextNode` state gates rendering of textarea vs static content. Icons come from lucide-react.",
+  "relevant_files": [
+    "src/App.jsx"
+  ],
+  "directory_structure": "src/App.jsx - Main component with all logic (5876 lines), src/MiniMap.jsx - Mini-map component, src/TaskPanel.jsx - Task panel, src/PinPanel.jsx - Pin panel, src/ReminderPanel.jsx - Reminder panel, src/main.jsx - Entry point, src/index.css - Global styles"
+}
