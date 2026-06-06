@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "fix",
   "description": "Address review feedback: fix reorder section mismatch in full-screen view, consolidate normalizeTasks helper usage, add Create & Set Location button to FullTaskManager",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In src/App.jsx, modify reorderTask to accept a third parameter `partitionBy` with values 'section' (default) or 'group'. When partitionBy === 'group', partition tasks by (task.groupId || 'inbox') instead of getTaskSection(task).",
     "In src/FullTaskManager.jsx, pass 'group' as the third argument when calling onReorderTask: onReorderTask(task.id, 'up', 'group') and onReorderTask(task.id, 'down', 'group').",
@@ -20,5 +20,5 @@
     "Run `npm run build` to confirm no compilation errors"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All three review issues addressed. reorderTask now accepts partitionBy parameter. normalizeTasks helper is called at all 4 entry points instead of inline. FullTaskManager has Create & Set Location button. Build passes."
 }
