@@ -2489,7 +2489,7 @@ export default function WorkflowApp() {
       const canvasX = (e.clientX - rect.left - transform.x) / transform.scale;
       const canvasY = (e.clientY - rect.top - transform.y) / transform.scale;
 
-      const pinId = `pin-task-${Date.now()}`;
+      const pinId = `pin-task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const newPin = {
         id: pinId,
         name: 'Task Location',
@@ -2505,7 +2505,7 @@ export default function WorkflowApp() {
         pins: [...(ws.pins || []), newPin],
       }));
 
-      setTasks(prev => prev.map(t => t.id === selectingLocationForTaskId ? { ...t, locationPinId: pinId } : t));
+      setTasks(prev => prev.map(t => t.id === selectingLocationForTaskId ? { ...t, locationPinId: pinId, locationWorkspaceId: activeTab } : t));
 
       setIsSelectingTaskLocation(false);
       setSelectingLocationForTaskId(null);
@@ -3048,15 +3048,25 @@ export default function WorkflowApp() {
   };
 
   // --- Task System Functions ---
+  const getTaskSection = (task) => {
+    if (task.status === 'completed') return 'completed';
+    if (!task.dueDate) return 'noDueDate';
+    const today = new Date().toISOString().split('T')[0];
+    if (task.dueDate <= today) return 'today';
+    return 'upcoming';
+  };
+
   const addTask = (taskData) => {
-    const newTask = {
-      id: `task-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      status: 'todo',
-      sortOrder: tasks.length,
-      ...taskData,
-    };
-    setTasks(prev => [...prev, newTask]);
+    setTasks(prev => {
+      const newTask = {
+        id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: new Date().toISOString(),
+        status: 'todo',
+        sortOrder: Math.max(0, ...prev.map(t => (t.sortOrder || 0))) + 1,
+        ...taskData,
+      };
+      return [...prev, newTask];
+    });
   };
 
   const updateTask = (taskId, updates) => {
@@ -3064,15 +3074,25 @@ export default function WorkflowApp() {
   };
 
   const deleteTask = (taskId) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    setTasks(prev => {
+      const task = prev.find(t => t.id === taskId);
+      if (task && task.locationPinId) {
+        // Remove the orphaned pin from all workspaces
+        setWorkspaces(wsArr => wsArr.map(ws => ({
+          ...ws,
+          pins: (ws.pins || []).filter(p => p.id !== task.locationPinId),
+        })));
+      }
+      return prev.filter(t => t.id !== taskId);
+    });
   };
 
   const reorderTask = (taskId, direction) => {
     setTasks(prev => {
       const task = prev.find(t => t.id === taskId);
       if (!task) return prev;
-      const isCompleted = task.status === 'done';
-      const sectionTasks = prev.filter(t => (t.status === 'done') === isCompleted).sort((a, b) => a.sortOrder - b.sortOrder);
+      const section = getTaskSection(task);
+      const sectionTasks = prev.filter(t => getTaskSection(t) === section).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
       const idx = sectionTasks.findIndex(t => t.id === taskId);
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= sectionTasks.length) return prev;
@@ -3097,8 +3117,8 @@ export default function WorkflowApp() {
     setShowTaskPanel(true);
   };
 
-  const navigateToTaskLocation = (pinId) => {
-    navigateToPin(pinId);
+  const navigateToTaskLocation = (pinId, workspaceId) => {
+    navigateToPin(pinId, workspaceId);
   };
 
   const createGroup = (clientX, clientY) => {
@@ -5504,6 +5524,7 @@ export default function WorkflowApp() {
             onCancelLocationSelection={cancelLocationSelection}
             isSelectingLocation={isSelectingTaskLocation}
             selectingLocationForTaskId={selectingLocationForTaskId}
+            workspaces={workspaces}
           />
         )}
 

@@ -55,6 +55,7 @@ export default function TaskPanel({
   onCancelLocationSelection,
   isSelectingLocation,
   selectingLocationForTaskId,
+  workspaces,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -409,15 +410,18 @@ export default function TaskPanel({
                           <MapPin className="w-3 h-3" />
                           Set Task Location
                         </button>
-                        {task.locationPinId && (
+                        {task.locationPinId && (() => {
+                          const pinExists = (workspaces || []).some(ws => (ws.pins || []).some(p => p.id === task.locationPinId));
+                          return pinExists ? (
                           <button
-                            onClick={() => onNavigateToLocation(task.locationPinId)}
+                            onClick={() => onNavigateToLocation(task.locationPinId, task.locationWorkspaceId)}
                             className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-semibold rounded transition-colors flex items-center gap-1"
                           >
                             <MapPin className="w-3 h-3" />
                             Go To Location
                           </button>
-                        )}
+                          ) : null;
+                        })()}
                       </div>
                       {/* Action Buttons */}
                       <div className="flex gap-1.5">
