@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Add Edit Mode toggle to the mind-map application. When Edit Mode is OFF, clicking anywhere on a card selects it immediately (no accidental content editing). When Edit Mode is ON, the current behavior is preserved (clicking title/content enters editing mode).",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Add `editMode` state and `Pencil` icon import. In src/App.jsx, add `import { Pencil } from 'lucide-react'` to the existing lucide import statement (or `PenLine` / `MousePointer` for the off-state icon). Add state: `const [editMode, setEditMode] = useState(true);` near the other UI state declarations (around line 339-440). Default is `true` so existing behavior is preserved on load.",
     "Step 2: Add the Edit Mode toggle button to the floating action bar (FAB). The FAB is a vertical column of buttons rendered around line 5067. Add the toggle button BEFORE the Timer button, separated by a divider `<div className='h-px w-5 bg-slate-200 my-0.5' />`. The button should visually indicate ON (indigo active style) vs OFF (slate inactive style), matching the pattern used by the Mini Map and Task Panel toggles. Use `Pencil` icon for edit mode, or `MousePointer` for selection mode. The button title should say 'Edit Mode (E)' or similar.",
@@ -25,5 +25,5 @@
     "Run `cd /projects/sandbox/mind-map && npm install && npm run build` to confirm the build succeeds without errors"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build passes cleanly. All changes confined to src/App.jsx. Added Pencil and MousePointer to lucide-react imports. The toggle button appears at the top of the FAB column before the Timer button."
 }
