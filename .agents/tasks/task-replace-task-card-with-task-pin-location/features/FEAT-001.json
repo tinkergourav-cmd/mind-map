@@ -33,5 +33,5 @@
     "Run `npm run build` and confirm zero errors in the Vite production build output"
   ],
   "blocked_reason": null,
-  "findings": "Build passes cleanly with npm run build. No test framework exists so validation is build-only. The Circle import was removed from TaskPanel.jsx since it was only used for the old linked card chip. The package-lock.json change was not staged as it only reflects npm install running."
+  "findings": "Build passes cleanly with npm run build. No test framework exists so validation is build-only. Post-review fixes applied: (1) removed setCardTaskLinks crash in importAllData by replacing with migration logic, (2) fixed canvasId resolution in all 3 migration paths to iterate workspaces and match card to its workspace ID, (3) added duplicate task guard checking matching title+coordinates+canvasId, (4) added Escape key cancellation for droppingTaskLocation mode, (5) fixed cross-tab navigation timing in locateTaskPin using requestAnimationFrame to defer centering until after tab switch renders."
 }
