@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Create the TaskPanel.jsx component with complete task management UI including sections (Today/Upcoming/No Due Date/Completed), task creation form, task editing, filtering, manual ordering (Move Up/Move Down), and location pin integration",
+  "status": "pending",
+  "steps": [
+    "Create src/TaskPanel.jsx as a new component file following the pattern of src/PinPanel.jsx and src/ReminderPanel.jsx",
+    "Define task data structure: { id, title, notes, status, priority, dueDate, createdAt, locationPinId, sortOrder }",
+    "Implement four statuses: 'todo', 'in_progress', 'waiting', 'completed'. Three priorities: 'low', 'medium', 'high'.",
+    "Implement panel layout with header (icon + title + count + close button), search bar (optional), filter buttons (All/Todo/In Progress/Waiting/Completed)",
+    "Implement collapsible sections: Today (tasks with dueDate = today, default expanded), Upcoming (tasks with future dueDate, default expanded), No Due Date (tasks without dueDate, default expanded), Completed (completed tasks, default collapsed)",
+    "Each task row displays: checkbox/status indicator, title, priority badge (colored: high=red, medium=amber, low=slate), due date if exists, location indicator (pin icon) if locationPinId is set. Keep rows compact for scanning dozens of tasks.",
+    "Implement 'New Task' button that opens a minimal inline form: Title (required input), Notes (optional textarea), Priority (select: Low/Medium/High, default Medium), Due Date (optional date input), Create button. No advanced options.",
+    "Implement task detail/edit view: clicking a task opens an edit form allowing changes to Title, Notes, Status (dropdown), Priority, Due Date. Include a 'Set Task Location' button and a 'Go To Location' button (if locationPinId exists).",
+    "Implement 'Set Task Location' workflow: when clicked, call a prop function (onStartLocationSelection) that passes the task ID to App.jsx. The panel should show a message like 'Click on canvas to set location...' with a cancel button. App.jsx will handle the actual canvas click and pin creation.",
+    "Implement 'Go To Location' button: calls prop onNavigateToLocation(locationPinId) which navigates the viewport to the linked pin.",
+    "Implement manual ordering: each task row has Move Up / Move Down buttons (use ChevronUp/ChevronDown icons from lucide-react) visible on hover. Moving updates the sortOrder field. The ordering is preserved within each section.",
+    "Implement task deletion with a delete button in the edit view.",
+    "Use Tailwind CSS classes matching the existing design language (slate backgrounds, rounded-lg, text-xs/text-sm fonts, hover transitions). Use lucide-react icons: CheckSquare or ListTodo for panel icon, ChevronUp/ChevronDown for reorder, MapPin for location, X for close, Plus for new task, Search for filter.",
+    "Export the component as default export. Accept these props: tasks (array), showPanel (boolean), onClose (function), onAddTask (function), onUpdateTask (function), onDeleteTask (function), onReorderTask (function taking taskId and direction 'up'|'down'), onStartLocationSelection (function taking taskId), onNavigateToLocation (function taking pinId), onCancelLocationSelection (function), isSelectingLocation (boolean), selectingLocationForTaskId (string|null).",
+    "Performance: use React.memo or useMemo for section grouping/filtering to ensure responsiveness with 100-200 tasks."
+  ],
+  "acceptance_criteria": [
+    "TaskPanel.jsx exists in src/ and exports a default React component",
+    "Panel displays tasks grouped in 4 collapsible sections: Today, Upcoming, No Due Date, Completed",
+    "New task form collects title (required), notes, priority, due date",
+    "Edit view allows changing title, notes, status, priority, due date",
+    "Move Up/Move Down controls change task order within sections",
+    "Filter buttons filter by status",
+    "Set Task Location button triggers location selection mode",
+    "Go To Location button visible when task has locationPinId",
+    "Visual design matches existing panel aesthetics (PinPanel/ReminderPanel)",
+    "`npm run build` passes with no errors after adding the file"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it exits with code 0"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

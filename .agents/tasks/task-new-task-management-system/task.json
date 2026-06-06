@@ -1,0 +1,7 @@
+{
+  "task_id": "task-new-task-management-system",
+  "task_description": "Build a completely new task management system as a panel component (TaskPanel.jsx) integrated into the ThoughtFlow mind-map application. Tasks are actions (not knowledge), support location pins for navigation, manual ordering, sections (Today/Upcoming/No Due Date/Completed), and full backup/import/export support. Must scale to 80-90+ active tasks without visual overload.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

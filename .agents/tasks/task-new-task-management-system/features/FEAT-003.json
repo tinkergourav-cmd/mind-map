@@ -1,0 +1,41 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Integrate TaskPanel into App.jsx with state management, persistence, location pin workflow, backup/export/import support, and toolbar toggle button",
+  "status": "pending",
+  "steps": [
+    "Add import for TaskPanel at the top of App.jsx: `import TaskPanel from './TaskPanel';`",
+    "Add import for ListTodo (or CheckSquare) icon from lucide-react for the toolbar button.",
+    "Add task system state variables after the Reminder states (around line 410): `const [tasks, setTasks] = useState([]);` and `const [showTaskPanel, setShowTaskPanel] = useState(false);` and `const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);` and `const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);`",
+    "Add task CRUD functions: addTask(taskData) creates a new task with id=`task-${Date.now()}`, createdAt=new Date().toISOString(), sortOrder = tasks.length. updateTask(taskId, updates) merges updates. deleteTask(taskId) removes task. reorderTask(taskId, direction) swaps sortOrder with adjacent task in the same section.",
+    "Add task location workflow functions: startLocationSelection(taskId) sets isSelectingTaskLocation=true and selectingLocationForTaskId=taskId and setShowTaskPanel(false to minimize panel). cancelLocationSelection() resets both states and shows panel again. In the canvas click handler (handlePointerDownMain or similar), when isSelectingTaskLocation is true, instead of normal behavior: create a special task-location pin at the click coordinates (using a distinct icon like a target or checkmark, e.g. icon='\\ud83d\\udccd' with a note like 'Task Location'), store the pin ID in the task's locationPinId, reset selection mode, and show the task panel again.",
+    "Add navigateToTaskLocation(pinId) function: find the pin in activeWs.pins, center viewport on it (same logic as navigateToPin), and briefly highlight it using focusedPinId.",
+    "Add persistence: In the useEffect that saves to projects (around line 841), add `tasks` to the dependency array and include `tasks` in the project update: `return { ...p, workspaces, activeTab, nextId, reminders, tasks, ...(shouldUpdateTime ? { lastModified: now } : {}) };`",
+    "Add loading: where reminders are loaded from project (around line 682-684), add: `const loadedTasks = activeProj.tasks || []; setTasks(loadedTasks);`",
+    "Add export support: In exportData() (line 2040), include tasks in the exported object: `const data = { workspaces, activeTab, nextId, tasks };`. In handleImport(), restore tasks from imported data.",
+    "In exportAllData(), tasks are automatically included because they are part of the project state (saved via the persistence useEffect).",
+    "In importAllData(), when restoring a project, also restore tasks: after `setNextId(defaultProj.nextId || 10);` add `setTasks(defaultProj.tasks || []);`",
+    "Add toolbar toggle button: In the left sidebar (around line 4113, after the Pins button and before the Reminders button), add a button for Tasks panel toggle following the same pattern as showPinPanel/showReminderPanel buttons. Use ListTodo icon with amber/yellow color scheme when active.",
+    "Add keyboard shortcut: In the keyboard handler section, add 'T' key (non-shift, non-ctrl, non-alt) to toggle task panel: `if (e.key === 't' || e.key === 'T') { e.preventDefault(); setShowTaskPanel(prev => !prev); }`",
+    "Render TaskPanel in the panels area (after ReminderPanel, around line 5370): `{showTaskPanel && viewMode === 'canvas' && (<TaskPanel tasks={tasks} showPanel={showTaskPanel} onClose={() => setShowTaskPanel(false)} onAddTask={addTask} onUpdateTask={updateTask} onDeleteTask={deleteTask} onReorderTask={reorderTask} onStartLocationSelection={startLocationSelection} onNavigateToLocation={navigateToTaskLocation} onCancelLocationSelection={cancelLocationSelection} isSelectingLocation={isSelectingTaskLocation} selectingLocationForTaskId={selectingLocationForTaskId} />)}`",
+    "Handle canvas click for location selection: In the main pointer down handler, at the top of the function, add a check: if isSelectingTaskLocation is true, compute canvas coordinates from click, create a task-location pin with distinct styling (icon: target emoji or pin variant, name: 'Task Location'), update the task with the new pin ID, reset selection state, show panel again, show toast 'Task location set', and return early (preventing normal canvas interaction).",
+    "Ensure task-location pins are visually distinguishable: use a distinct icon (e.g. the target emoji or a flag) and a different color than regular pins. When creating the pin, set color to '#6366f1' (indigo) to differentiate from the default red pins."
+  ],
+  "acceptance_criteria": [
+    "TaskPanel is imported and rendered in App.jsx",
+    "Tasks state is persisted to localStorage via the project system",
+    "Tasks are included in workspace export/import operations",
+    "Tasks are included in full backup export/import",
+    "Toggle button appears in sidebar between Pins and Reminders buttons",
+    "Keyboard shortcut T toggles the task panel",
+    "Location selection mode: clicking Set Task Location minimizes panel, canvas click creates a special pin and links it to the task",
+    "Go To Location navigates viewport to the linked pin",
+    "Task-location pins are visually distinct from regular pins (different icon/color)",
+    "`npm run build` passes with no errors"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it exits with code 0"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
