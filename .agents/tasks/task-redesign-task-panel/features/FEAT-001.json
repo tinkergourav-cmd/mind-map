@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix task ordering system and group filtering bug - these are critical bugs that must be resolved before redesigning the UI",
+  "status": "in_progress",
+  "steps": [
+    "In src/App.jsx, fix the reorderTask function (line ~3099). Current issue: when two tasks have the same sortOrder (e.g., both 0 or both undefined), swapping them produces no visible change. Fix: instead of swapping sortOrder values, reassign sequential sortOrder values to the section after swap. Also ensure sortOrder is always initialized - existing tasks loaded from localStorage may have sortOrder=0 or undefined for all tasks.",
+    "In src/App.jsx, fix the addTask function (line ~3066). The sortOrder calculation `Math.max(0, ...prev.map(t => (t.sortOrder || 0))) + 1` works for new tasks but does not account for tasks within the same group/section needing sequential ordering. Ensure each new task gets a unique sortOrder.",
+    "Fix group filtering bug: In src/TaskPanel.jsx (line ~188 in the useMemo sections), the filter `task.groupId === activeGroupFilter` fails for tasks that have undefined groupId. These tasks should be treated as belonging to 'inbox'. The fix is to normalize: `(task.groupId || 'inbox') === activeGroupFilter`. Check the current code - it already uses `(task.groupId || 'inbox')` on line ~188, but verify the App.jsx import flow: in handleImport (line ~2154), imported tasks may not have groupId set. Add a migration step when loading tasks that ensures every task has a groupId field defaulting to 'inbox'.",
+    "In src/App.jsx, add a migration/normalization step in the initialization code (around line 695 where tasks are loaded from saved state). After loading tasks, ensure each task has: groupId (default 'inbox'), sortOrder (assign sequential values if missing/all-zeros). This ensures persistence across refresh/restart/import.",
+    "Verify the reorderTask function properly handles the case where tasks have identical sortOrder values by re-indexing the section's tasks with sequential sortOrder before performing the swap."
+  ],
+  "acceptance_criteria": [
+    "Moving a task up/down immediately changes its position in the list",
+    "Task order persists after page refresh (localStorage save/load cycle preserves order)",
+    "Tasks without a groupId display correctly under 'Inbox' group filter",
+    "Selecting a specific group filter shows all tasks belonging to that group without requiring edits",
+    "Newly imported tasks (from JSON files that may lack groupId) appear correctly under Inbox",
+    "npm run build succeeds without errors"
+  ],
+  "verification": [
+    "Run `npm run build` to confirm no compilation errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

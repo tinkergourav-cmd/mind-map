@@ -693,7 +693,11 @@ export default function WorkflowApp() {
 
             // Load task data
             const loadedTasks = activeProj.tasks || [];
-            setTasks(loadedTasks);
+            setTasks(loadedTasks.map((t, i) => ({
+              ...t,
+              groupId: t.groupId || 'inbox',
+              sortOrder: t.sortOrder || (i + 1),
+            })));
             const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
             setTaskGroups(loadedTaskGroups);
             
@@ -1771,7 +1775,11 @@ export default function WorkflowApp() {
     setActiveTab(target.activeTab || (targetWorkspaces.length > 0 ? targetWorkspaces[0].id : ''));
     setNextId(target.nextId || 10);
     setReminders(target.reminders || DEFAULT_REMINDERS);
-    setTasks(target.tasks || []);
+    setTasks((target.tasks || []).map((t, i) => ({
+      ...t,
+      groupId: t.groupId || 'inbox',
+      sortOrder: t.sortOrder || (i + 1),
+    })));
     setTaskGroups(target.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
@@ -2151,7 +2159,11 @@ export default function WorkflowApp() {
           setWorkspaces(importedData.workspaces);
           setActiveTab(importedData.activeTab || importedData.workspaces[0]?.id || '');
           setNextId(importedData.nextId || 10);
-          if (importedData.tasks) setTasks(importedData.tasks);
+          if (importedData.tasks) setTasks(importedData.tasks.map((t, i) => ({
+            ...t,
+            groupId: t.groupId || 'inbox',
+            sortOrder: t.sortOrder || (i + 1),
+          })));
           if (importedData.taskGroups) setTaskGroups(importedData.taskGroups);
         } else {
           setErrorMessage("Invalid workflow file format.");
@@ -2206,7 +2218,11 @@ export default function WorkflowApp() {
               setWorkspaces(defaultProj.workspaces || []);
               setActiveTab(defaultProj.activeTab || defaultProj.workspaces?.[0]?.id || '');
               setNextId(defaultProj.nextId || 10);
-              setTasks(defaultProj.tasks || []);
+              setTasks((defaultProj.tasks || []).map((t, i) => ({
+                ...t,
+                groupId: t.groupId || 'inbox',
+                sortOrder: t.sortOrder || (i + 1),
+              })));
               setTaskGroups(defaultProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
             }
           } catch (restoreErr) {
@@ -3055,6 +3071,14 @@ export default function WorkflowApp() {
   };
 
   // --- Task System Functions ---
+  const normalizeTasks = (taskList) => {
+    return taskList.map((t, i) => ({
+      ...t,
+      groupId: t.groupId || 'inbox',
+      sortOrder: t.sortOrder || (i + 1),
+    }));
+  };
+
   const getTaskSection = (task) => {
     if (task.status === 'completed') return 'completed';
     if (!task.dueDate) return 'noDueDate';
@@ -3105,12 +3129,15 @@ export default function WorkflowApp() {
       const idx = sectionTasks.findIndex(t => t.id === taskId);
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= sectionTasks.length) return prev;
-      const swapTask = sectionTasks[swapIdx];
-      return prev.map(t => {
-        if (t.id === taskId) return { ...t, sortOrder: swapTask.sortOrder };
-        if (t.id === swapTask.id) return { ...t, sortOrder: task.sortOrder };
-        return t;
-      });
+      // Re-index section tasks with sequential sortOrder to ensure unique values
+      const reindexed = {};
+      sectionTasks.forEach((t, i) => { reindexed[t.id] = i + 1; });
+      // Swap the two positions
+      const targetId = sectionTasks[swapIdx].id;
+      const temp = reindexed[taskId];
+      reindexed[taskId] = reindexed[targetId];
+      reindexed[targetId] = temp;
+      return prev.map(t => reindexed[t.id] !== undefined ? { ...t, sortOrder: reindexed[t.id] } : t);
     });
   };
 
