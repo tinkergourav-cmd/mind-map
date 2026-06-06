@@ -1,0 +1,21 @@
+{
+  "project_type": "React + Vite SPA with Tailwind CSS - mind map/project management tool",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite with npm",
+  "test_framework": "None - no test infrastructure exists",
+  "build_command": "npm run build",
+  "test_command": "npm run build (no test suite - verify via build success)",
+  "verification_instructions": "Run `npm run build` to confirm no compilation errors. The project has no automated tests.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install && npm run build",
+  "environment_constraints": "OPEN_INTERNET - full access to npm registry and external resources",
+  "contribution_requirements": "Commit to feat/task-management-system branch. PR #14 already exists.",
+  "key_patterns": "Single-file monolithic App.jsx (~5873 lines) with state management via useState/useCallback. Components: TaskPanel.jsx (sidebar), PinPanel.jsx, ReminderPanel.jsx, MiniMap.jsx. Tailwind CSS for styling. lucide-react for icons. Data persisted to localStorage via projects array. Export/import includes tasks and taskGroups fields.",
+  "relevant_files": [
+    "src/App.jsx - main app with task state (lines 429-434), addTask (3066), updateTask (3081), deleteTask (3085), reorderTask (3099), getTaskSection (3058), addTaskGroup (3134), renameTaskGroup, deleteTaskGroup, exportData (2070), handleImport (2141), TaskPanel rendering (5543-5564)",
+    "src/TaskPanel.jsx - current sidebar task panel component (816 lines), will be redesigned into FullTaskManager.jsx",
+    "src/index.css - global styles and scrollbar customization",
+    "tailwind.config.js - Tailwind configuration"
+  ],
+  "directory_structure": "src/ contains App.jsx (monolith), TaskPanel.jsx, MiniMap.jsx, PinPanel.jsx, ReminderPanel.jsx, main.jsx, index.css. No subdirectories."
+}
