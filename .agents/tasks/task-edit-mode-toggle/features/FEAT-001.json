@@ -25,5 +25,5 @@
     "Run `cd /projects/sandbox/mind-map && npm install && npm run build` to confirm the build succeeds without errors"
   ],
   "blocked_reason": null,
-  "findings": "Build passes cleanly. All changes confined to src/App.jsx. Added Pencil and MousePointer to lucide-react imports. The toggle button appears at the top of the FAB column before the Timer button."
+  "findings": "Build passes cleanly. All changes confined to src/App.jsx. Added Pencil and MousePointer to lucide-react imports. The toggle button appears at the top of the FAB column before the Timer button. Review fixes applied: (1) cursor-text now switches to cursor-default when editMode is OFF, (2) Link Portal onPointerDown stopPropagation is conditional on editMode, (3) Add notes onClick stopPropagation is conditional on editMode."
 }
