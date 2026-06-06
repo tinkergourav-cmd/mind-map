@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "refactor",
   "description": "Remove all task-to-card linking functionality from TaskPanel.jsx and App.jsx while keeping the task system (create, edit, delete, complete, persist) fully functional.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In src/TaskPanel.jsx: Remove `cardTaskLinks`, `nodes`, and `onLocateCard` from the component props destructuring (line 28-30).",
     "In src/TaskPanel.jsx: Remove the `getLinkedCard` helper function (lines 53-56).",
@@ -39,5 +39,5 @@
     "Run `grep -rn 'cardTaskLinks\\|addTaskFromCard\\|getLinkedCard\\|onLocateCard' src/` and confirm no matches"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Found an additional cardTaskLinks reference at line 4808 in App.jsx (task status indicator dot rendered on card nodes) that was not listed in the original feature steps. Removed it as well. Build passes cleanly."
 }
