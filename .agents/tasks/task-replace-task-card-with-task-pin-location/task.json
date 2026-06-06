@@ -1,0 +1,7 @@
+{
+  "task_id": "task-replace-task-card-with-task-pin-location",
+  "task_description": "Replace the existing Task-Card linking architecture (cardTaskLinks mapping taskId to cardId) with a new Task-Pin Location system where tasks store canvas coordinates (x, y, canvasId) instead of card ID references. This improves long-term reliability by removing dependency on card existence.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

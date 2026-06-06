@@ -1,0 +1,20 @@
+{
+  "project_type": "React + Vite SPA (ThoughtFlow mind-map application)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite 6 with React plugin, Tailwind CSS 3 for styling",
+  "test_framework": "None configured - validation is build-only",
+  "build_command": "npm run build",
+  "test_command": "npm run build (no test framework)",
+  "verification_instructions": "Run `npm run build` to confirm the Vite production build succeeds without errors.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "OPEN_INTERNET network mode. No Docker daemon needed. No test framework - rely on build success.",
+  "contribution_requirements": "None specified - no CONTRIBUTING.md exists.",
+  "key_patterns": "Single-file React app in App.jsx (~5900 lines). State managed with useState hooks. Sub-panels in separate JSX files (TaskPanel.jsx, PinPanel.jsx, ReminderPanel.jsx, MiniMap.jsx). Data persisted to localStorage via projects array. Import/export serializes projects array to JSON.",
+  "relevant_files": [
+    "src/App.jsx - Main app: contains task state (tasks, taskGroups, cardTaskLinks), task CRUD functions (addTaskFromCard, deleteTask, updateTask, locateCard), pin system (addPin, navigateToPin), canvas rendering, context menus, keyboard shortcuts, import/export",
+    "src/TaskPanel.jsx - Task panel UI: shows task list/card views, uses cardTaskLinks + nodes props to find linked cards, renders 'Locate card' chip via getLinkedCard helper and onLocateCard prop",
+    "src/PinPanel.jsx - Pin panel UI: manages existing canvas pins (separate from task system)"
+  ],
+  "directory_structure": "src/ contains all source: App.jsx (main), TaskPanel.jsx, PinPanel.jsx, ReminderPanel.jsx, MiniMap.jsx, main.jsx (entry), index.css (Tailwind). package.json at root. Build outputs to dist/."
+}

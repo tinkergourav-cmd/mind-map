@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Replace the Task-Card linking architecture with a Task-Pin Location system. Instead of linking tasks to card IDs, tasks store a canvas location (x, y coordinates) via a special task-location pin. Users can drop a location pin from the task creation flow, and clicking a task navigates to that pin's position on the canvas.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Update Task Data Model in src/App.jsx: Change the task object structure to include optional location fields: `locationPin` object with `{ x, y, canvasId }` instead of relying on the separate `cardTaskLinks` state array. Keep backward compatibility by migrating existing tasks on load.",
+    "Step 2 - Replace addTaskFromCard function in src/App.jsx (around line 3003): Instead of creating a task linked to a cardId via cardTaskLinks, create a task with a locationPin that stores x/y coordinates of the card's position. The task title still comes from the card title but the relationship is coordinate-based, not ID-based. The function should place the pin at the card's x/y position.",
+    "Step 3 - Add a 'Drop Task Location' mode in src/App.jsx: Add new state `droppingTaskLocation` (taskId or null). When active, the user can click on the canvas to place the task's location pin at that point. The state stores the coordinates in the task's locationPin field. Add visual feedback (cursor change, temporary pin marker) while in drop mode.",
+    "Step 4 - Update locateCard function (around line 3090 in src/App.jsx) to become locateTaskPin: Instead of looking up a card by ID, read the task's locationPin x/y coordinates and center the viewport there. Add a brief highlight animation (similar to focusedPinId bounce used for regular pins).",
+    "Step 5 - Render task location pins on the canvas in src/App.jsx (near line 4930 Pins Layer): Add a new section that renders task-location pins for tasks that have a locationPin set. These should be visually distinct from regular pins - use a different icon/style (e.g., a target or flag icon with the task title as tooltip). They should be draggable to allow repositioning.",
+    "Step 6 - Update TaskPanel.jsx: Replace the 'Linked Card' chip (the button that shows linked card name and calls onLocateCard) with a 'Location Pin' chip that shows when a task has a locationPin. Add a 'Drop Location' button for tasks without a locationPin. Change the onLocateCard prop to onLocateTaskPin which navigates to the task's pin coordinates. Remove the `cardTaskLinks` and `nodes` props dependency for linking (keep nodes for other purposes if needed).",
+    "Step 7 - Update the node context menu in src/App.jsx (around line 5240): Change 'Add to Tasks' to create a task with locationPin set to the card's x/y position instead of creating a cardTaskLink.",
+    "Step 8 - Update keyboard shortcut Shift+T in src/App.jsx (around line 1372): When Shift+T is pressed with a focused node, create a task with locationPin at the node's position instead of using cardTaskLinks.",
+    "Step 9 - Remove cardTaskLinks state and related code in src/App.jsx: Remove the `cardTaskLinks` useState, remove it from the auto-save effect dependencies (line 880), remove it from project load (line 699), remove it from the project save object (line 868). Keep backward compatibility - if old data has cardTaskLinks, migrate them to locationPin on task objects during initialization.",
+    "Step 10 - Update import/export in src/App.jsx: Ensure the exported project data includes tasks with locationPin fields. When importing old data that has cardTaskLinks, migrate them to locationPin format during import.",
+    "Step 11 - Add 'Drop Task Location' option to the task creation UX: When creating a new task (not from a card), provide a way to set a location. In the expanded task row in TaskPanel.jsx, add a 'Pin Location' button that triggers the drop-location mode on the canvas."
+  ],
+  "acceptance_criteria": [
+    "Running `npm run build` succeeds without errors",
+    "Tasks no longer store or reference card IDs - the cardTaskLinks state array is removed",
+    "Tasks can have an optional locationPin with { x, y, canvasId } fields",
+    "Right-clicking a card and selecting 'Add to Tasks' creates a task with locationPin at the card's position",
+    "Pressing Shift+T on a focused card creates a task with locationPin at the card's position",
+    "Clicking a task with a locationPin in the TaskPanel navigates the viewport to that pin's coordinates",
+    "Task location pins are rendered on the canvas as draggable visual markers",
+    "Users can set/update a task's location by entering 'Drop Task Location' mode and clicking the canvas",
+    "Old data with cardTaskLinks is migrated to locationPin format on load without data loss",
+    "The existing pin system (PinPanel, regular pins) continues to work unchanged",
+    "The reminder system, timer system, and all other features remain functional"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm zero errors in the Vite production build output"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

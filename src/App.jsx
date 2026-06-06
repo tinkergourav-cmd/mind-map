@@ -403,7 +403,11 @@ export default function WorkflowApp() {
     { id: 'tg-research', name: 'Research', order: 3 },
     { id: 'tg-followup', name: 'Follow-up', order: 4 },
   ]);
-  const [cardTaskLinks, setCardTaskLinks] = useState([]);
+  const [droppingTaskLocation, setDroppingTaskLocation] = useState(null); // taskId or null - when active, next canvas click sets task location
+  const [focusedTaskPinId, setFocusedTaskPinId] = useState(null); // for bounce animation on task pin navigation
+  const [draggingTaskPin, setDraggingTaskPin] = useState(null); // for dragging task location pins
+  const [hoveredTaskPinId, setHoveredTaskPinId] = useState(null);
+  const taskPinDraggedRef = useRef(false);
   const [showTaskPanel, setShowTaskPanel] = useState(false);
   const [taskPanelMode, setTaskPanelMode] = useState('split');
 
@@ -694,9 +698,26 @@ export default function WorkflowApp() {
             setNextId(activeProj.nextId || 10);
 
             // Load task data
-            if (activeProj.tasks) setTasks(activeProj.tasks);
+            if (activeProj.tasks) {
+              let loadedTasks = activeProj.tasks;
+              // Migrate old cardTaskLinks to locationPin on tasks
+              if (activeProj.cardTaskLinks && Array.isArray(activeProj.cardTaskLinks)) {
+                const initialWorkspaceNodes = initialWorkspaces.flatMap(ws => ws.nodes || []);
+                loadedTasks = loadedTasks.map(t => {
+                  if (t.locationPin) return t; // already migrated
+                  const link = activeProj.cardTaskLinks.find(l => l.taskId === t.id);
+                  if (link) {
+                    const card = initialWorkspaceNodes.find(n => n.id === link.cardId);
+                    if (card) {
+                      return { ...t, locationPin: { x: card.x, y: card.y, canvasId: activeProj.activeTab || '' } };
+                    }
+                  }
+                  return t;
+                });
+              }
+              setTasks(loadedTasks);
+            }
             if (activeProj.taskGroups) setTaskGroups(activeProj.taskGroups);
-            if (activeProj.cardTaskLinks) setCardTaskLinks(activeProj.cardTaskLinks);
 
             // Load reminder data
             const loadedReminders = activeProj.reminders || DEFAULT_REMINDERS;
@@ -865,7 +886,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, tasks, taskGroups, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -877,7 +898,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks, reminders, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, tasks, taskGroups, reminders, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1790,7 +1811,6 @@ export default function WorkflowApp() {
       { id: 'tg-research', name: 'Research', order: 3 },
       { id: 'tg-followup', name: 'Follow-up', order: 4 },
     ]);
-    setCardTaskLinks(target.cardTaskLinks || []);
     setReminders(target.reminders || DEFAULT_REMINDERS);
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
@@ -1841,7 +1861,6 @@ export default function WorkflowApp() {
       { id: 'tg-research', name: 'Research', order: 3 },
       { id: 'tg-followup', name: 'Follow-up', order: 4 },
     ]);
-    setCardTaskLinks(target.cardTaskLinks || []);
     setReminders(target.reminders || DEFAULT_REMINDERS);
     // Default project is always password-free
     if (isDefault) {
@@ -2096,7 +2115,7 @@ export default function WorkflowApp() {
 
   // --- Import / Export ---
   const exportData = () => {
-    const data = { workspaces, activeTab, nextId, tasks, taskGroups, cardTaskLinks };
+    const data = { workspaces, activeTab, nextId, tasks, taskGroups };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2185,8 +2204,20 @@ export default function WorkflowApp() {
           if (Array.isArray(importedData.taskGroups) && importedData.taskGroups.every(g => g && g.id && g.name != null)) {
             setTaskGroups(importedData.taskGroups);
           }
-          if (Array.isArray(importedData.cardTaskLinks) && importedData.cardTaskLinks.every(l => l && l.cardId && l.taskId)) {
-            setCardTaskLinks(importedData.cardTaskLinks);
+          // Migrate old cardTaskLinks to locationPin on tasks during import
+          if (Array.isArray(importedData.cardTaskLinks) && importedData.cardTaskLinks.length > 0) {
+            const allImportedNodes = importedData.workspaces.flatMap(ws => ws.nodes || []);
+            setTasks(prev => prev.map(t => {
+              if (t.locationPin) return t;
+              const link = importedData.cardTaskLinks.find(l => l.taskId === t.id);
+              if (link) {
+                const card = allImportedNodes.find(n => n.id === link.cardId);
+                if (card) {
+                  return { ...t, locationPin: { x: card.x, y: card.y, canvasId: importedData.activeTab || '' } };
+                }
+              }
+              return t;
+            }));
           }
         } else {
           setErrorMessage("Invalid workflow file format.");
@@ -2533,6 +2564,14 @@ export default function WorkflowApp() {
   const handlePointerDownMain = (e) => {
     if (e.button !== 0) return;
     
+    // Handle drop task location mode
+    if (droppingTaskLocation) {
+      const coords = getWorkspaceCoords(e);
+      setTasks(prev => prev.map(t => t.id === droppingTaskLocation ? { ...t, locationPin: { x: coords.x, y: coords.y, canvasId: activeTab } } : t));
+      setDroppingTaskLocation(null);
+      return;
+    }
+
     setOpenColorPicker(null);
     setOpenLinkPicker(null);
     setContextMenu(null);
@@ -2675,8 +2714,16 @@ export default function WorkflowApp() {
         currentX: draggingPin.initialX + dx,
         currentY: draggingPin.initialY + dy
       }));
+    } else if (draggingTaskPin) {
+      const dx = (e.clientX - draggingTaskPin.startX) / transform.scale;
+      const dy = (e.clientY - draggingTaskPin.startY) / transform.scale;
+      setDraggingTaskPin(prev => ({
+        ...prev,
+        currentX: draggingTaskPin.initialX + dx,
+        currentY: draggingTaskPin.initialY + dy
+      }));
     }
-  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, draggingTaskPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
 
 
   const handlePointerUp = useCallback(() => {
@@ -2857,6 +2904,13 @@ export default function WorkflowApp() {
       }
     }
 
+    if (draggingTaskPin) {
+      if (draggingTaskPin.currentX !== draggingTaskPin.initialX || draggingTaskPin.currentY !== draggingTaskPin.initialY) {
+        taskPinDraggedRef.current = true;
+        setTasks(prev => prev.map(t => t.id === draggingTaskPin.id ? { ...t, locationPin: { ...t.locationPin, x: draggingTaskPin.currentX, y: draggingTaskPin.currentY } } : t));
+      }
+    }
+
     setDraggingNode(null);
     draggingNodeRef.current = null;
     setDraggingGroup(null);
@@ -2867,8 +2921,9 @@ export default function WorkflowApp() {
     setIsPanning(false);
     setDraggingImage(null);
     setDraggingPin(null);
+    setDraggingTaskPin(null);
     dragSnapshot.current = null;
-  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, draggingTaskPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
 
 
   // --- Node, Edge, and Group Creators ---
@@ -3003,8 +3058,6 @@ export default function WorkflowApp() {
   const addTaskFromCard = (cardId) => {
     const card = nodes.find(n => n.id === cardId);
     if (!card) return;
-    // Prevent duplicate task creation for the same card
-    if (cardTaskLinks.some(l => l.cardId === cardId)) return;
     const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const defaultGroup = taskGroups.length > 0 ? [...taskGroups].sort((a, b) => a.order - b.order)[0].id : 'tg-today';
     const newTask = {
@@ -3014,9 +3067,9 @@ export default function WorkflowApp() {
       groupId: defaultGroup,
       note: '',
       createdAt: Date.now(),
+      locationPin: { x: card.x, y: card.y, canvasId: activeTab },
     };
     setTasks(prev => [...prev, newTask]);
-    setCardTaskLinks(prev => [...prev, { cardId, taskId }]);
     // Open task panel if not open
     if (!showTaskPanel) setShowTaskPanel(true);
   };
@@ -3027,7 +3080,7 @@ export default function WorkflowApp() {
 
   const deleteTask = (taskId) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    setCardTaskLinks(prev => prev.filter(l => l.taskId !== taskId));
+    if (droppingTaskLocation === taskId) setDroppingTaskLocation(null);
   };
 
   const toggleTaskStatus = (taskId) => {
@@ -3078,20 +3131,24 @@ export default function WorkflowApp() {
     setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...updates } : g));
   };
 
-  const locateCard = (cardId) => {
-    const card = nodes.find(n => n.id === cardId);
-    if (!card || !workspaceRef.current) return;
+  const locateTaskPin = (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.locationPin || !workspaceRef.current) return;
+    const { x, y, canvasId } = task.locationPin;
+    // Switch canvas tab if needed
+    if (canvasId && canvasId !== activeTab) {
+      setActiveTab(canvasId);
+    }
     const rect = workspaceRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    const nodeWidth = getNodeDimensions(card).width;
     setTransform(prev => ({
-      x: centerX - card.x * prev.scale - (nodeWidth * prev.scale) / 2,
-      y: centerY - card.y * prev.scale - (140 * prev.scale) / 2,
+      x: centerX - x * prev.scale,
+      y: centerY - y * prev.scale,
       scale: prev.scale,
     }));
-    bringToFront(cardId);
-    setFocusedNodeId(cardId);
+    setFocusedTaskPinId(taskId);
+    setTimeout(() => setFocusedTaskPinId(null), 2000);
     // Switch to split mode if in fullscreen to show the canvas
     if (taskPanelMode === 'fullscreen') {
       setTaskPanelMode('split');
@@ -4404,7 +4461,7 @@ export default function WorkflowApp() {
         {/* --- Main Workspace Canvas Area --- */}
         <main
           ref={workspaceRef}
-          className={`${showTaskPanel && taskPanelMode === 'split' ? 'w-1/2' : showClonePanel ? 'flex-1 min-w-0' : 'flex-1'} relative overflow-hidden ${showClonePanel ? 'bg-[#1a1a2e]' : 'bg-[#1e1e2e]'} touch-none text-slate-800 transition-all duration-300`}
+          className={`${showTaskPanel && taskPanelMode === 'split' ? 'w-1/2' : showClonePanel ? 'flex-1 min-w-0' : 'flex-1'} relative overflow-hidden ${showClonePanel ? 'bg-[#1a1a2e]' : 'bg-[#1e1e2e]'} touch-none text-slate-800 transition-all duration-300 ${droppingTaskLocation ? 'cursor-crosshair' : ''}`}
           onPointerDown={handlePointerDownMain}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -4418,6 +4475,14 @@ export default function WorkflowApp() {
           onDrop={handleCanvasImageDrop}
           style={{ display: viewMode === 'canvas' && !(showTaskPanel && taskPanelMode === 'fullscreen') ? undefined : 'none' }}
         >
+          {/* Drop task location mode banner */}
+          {droppingTaskLocation && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[9999] bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-semibold pointer-events-auto">
+              <span>🎯</span>
+              <span>Click on the canvas to set task location</span>
+              <button onClick={() => setDroppingTaskLocation(null)} className="ml-2 px-2 py-0.5 bg-emerald-800 hover:bg-emerald-900 rounded text-xs transition-colors">Cancel</button>
+            </div>
+          )}
           {/* Panning grid backdrop */}
           <div className="absolute inset-0 canvas-grid-clickable cursor-crosshair active:cursor-grabbing opacity-60" style={{
             backgroundImage: 'radial-gradient(#4a5568 1.5px, transparent 1.5px)',
@@ -4996,6 +5061,63 @@ export default function WorkflowApp() {
               );
             })}
 
+            {/* --- Task Location Pins Layer --- */}
+            {tasks.filter(t => t.locationPin && t.locationPin.canvasId === activeTab).map(task => {
+              const isDraggingThis = draggingTaskPin && draggingTaskPin.id === task.id;
+              const displayX = isDraggingThis ? draggingTaskPin.currentX : task.locationPin.x;
+              const displayY = isDraggingThis ? draggingTaskPin.currentY : task.locationPin.y;
+              return (
+              <div
+                key={`task-pin-${task.id}`}
+                className={`absolute pointer-events-auto z-[54] ${focusedTaskPinId === task.id ? 'animate-bounce' : ''} ${isDraggingThis ? 'cursor-grabbing' : 'cursor-pointer'}`}
+                style={{
+                  left: displayX,
+                  top: displayY,
+                  transform: `translate(-50%, -50%) scale(${1 / transform.scale})`,
+                  transformOrigin: 'center center',
+                }}
+                onMouseEnter={() => setHoveredTaskPinId(task.id)}
+                onMouseLeave={() => setHoveredTaskPinId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (taskPinDraggedRef.current) { taskPinDraggedRef.current = false; return; }
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (e.button !== 0) return;
+                  setDraggingTaskPin({
+                    id: task.id,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    initialX: task.locationPin.x,
+                    initialY: task.locationPin.y,
+                    currentX: task.locationPin.x,
+                    currentY: task.locationPin.y
+                  });
+                }}
+                onGotPointerCapture={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); }}
+              >
+                {/* Task pin icon */}
+                <div className="relative flex items-center justify-center">
+                  <span
+                    className="text-xl select-none"
+                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5)) drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
+                  >
+                    🎯
+                  </span>
+                </div>
+
+                {/* Tooltip on hover */}
+                {hoveredTaskPinId === task.id && !isDraggingThis && (
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 bg-emerald-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap max-w-[150px] truncate pointer-events-none z-[100]">
+                    <div className="font-semibold">{task.title}</div>
+                    <div className="text-emerald-200 text-[9px]">Task Location</div>
+                  </div>
+                )}
+              </div>
+              );
+            })}
+
             {/* --- Selection Box --- */}
             {selectionBox && (
               <div
@@ -5539,8 +5661,6 @@ export default function WorkflowApp() {
           <TaskPanel
             tasks={tasks}
             taskGroups={taskGroups}
-            cardTaskLinks={cardTaskLinks}
-            nodes={nodes}
             showTaskPanel={showTaskPanel}
             taskPanelMode={taskPanelMode}
             setTaskPanelMode={setTaskPanelMode}
@@ -5553,7 +5673,8 @@ export default function WorkflowApp() {
             onAddGroup={addTaskGroup}
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroup={updateTaskGroup}
-            onLocateCard={locateCard}
+            onLocateTaskPin={locateTaskPin}
+            onDropTaskLocation={(taskId) => { setDroppingTaskLocation(taskId); if (taskPanelMode === 'fullscreen') setTaskPanelMode('split'); }}
           />
         )}
 
