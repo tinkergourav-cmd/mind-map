@@ -696,11 +696,7 @@ export default function WorkflowApp() {
 
             // Load task data
             const loadedTasks = activeProj.tasks || [];
-            setTasks(loadedTasks.map((t, i) => ({
-              ...t,
-              groupId: t.groupId || 'inbox',
-              sortOrder: t.sortOrder || (i + 1),
-            })));
+            setTasks(normalizeTasks(loadedTasks));
             const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
             setTaskGroups(loadedTaskGroups.map((g, i) => ({
               ...g,
@@ -1781,11 +1777,7 @@ export default function WorkflowApp() {
     setActiveTab(target.activeTab || (targetWorkspaces.length > 0 ? targetWorkspaces[0].id : ''));
     setNextId(target.nextId || 10);
     setReminders(target.reminders || DEFAULT_REMINDERS);
-    setTasks((target.tasks || []).map((t, i) => ({
-      ...t,
-      groupId: t.groupId || 'inbox',
-      sortOrder: t.sortOrder || (i + 1),
-    })));
+    setTasks(normalizeTasks(target.tasks || []));
     const switchedTaskGroups = target.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
     setTaskGroups(switchedTaskGroups.map((g, i) => ({
       ...g,
@@ -2169,11 +2161,7 @@ export default function WorkflowApp() {
           setWorkspaces(importedData.workspaces);
           setActiveTab(importedData.activeTab || importedData.workspaces[0]?.id || '');
           setNextId(importedData.nextId || 10);
-          if (importedData.tasks) setTasks(importedData.tasks.map((t, i) => ({
-            ...t,
-            groupId: t.groupId || 'inbox',
-            sortOrder: t.sortOrder || (i + 1),
-          })));
+          if (importedData.tasks) setTasks(normalizeTasks(importedData.tasks));
           if (importedData.taskGroups) setTaskGroups(importedData.taskGroups.map((g, i) => ({
             ...g,
             color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
@@ -2231,11 +2219,7 @@ export default function WorkflowApp() {
               setWorkspaces(defaultProj.workspaces || []);
               setActiveTab(defaultProj.activeTab || defaultProj.workspaces?.[0]?.id || '');
               setNextId(defaultProj.nextId || 10);
-              setTasks((defaultProj.tasks || []).map((t, i) => ({
-                ...t,
-                groupId: t.groupId || 'inbox',
-                sortOrder: t.sortOrder || (i + 1),
-              })));
+              setTasks(normalizeTasks(defaultProj.tasks || []));
               const restoredTaskGroups = defaultProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
               setTaskGroups(restoredTaskGroups.map((g, i) => ({
                 ...g,
@@ -3137,20 +3121,26 @@ export default function WorkflowApp() {
     });
   };
 
-  const reorderTask = (taskId, direction) => {
+  const reorderTask = (taskId, direction, partitionBy = 'section') => {
     setTasks(prev => {
       const task = prev.find(t => t.id === taskId);
       if (!task) return prev;
-      const section = getTaskSection(task);
-      const sectionTasks = prev.filter(t => getTaskSection(t) === section).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-      const idx = sectionTasks.findIndex(t => t.id === taskId);
+      let peerTasks;
+      if (partitionBy === 'group') {
+        const groupKey = task.groupId || 'inbox';
+        peerTasks = prev.filter(t => (t.groupId || 'inbox') === groupKey).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      } else {
+        const section = getTaskSection(task);
+        peerTasks = prev.filter(t => getTaskSection(t) === section).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
+      const idx = peerTasks.findIndex(t => t.id === taskId);
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= sectionTasks.length) return prev;
-      // Re-index section tasks with sequential sortOrder to ensure unique values
+      if (swapIdx < 0 || swapIdx >= peerTasks.length) return prev;
+      // Re-index peer tasks with sequential sortOrder to ensure unique values
       const reindexed = {};
-      sectionTasks.forEach((t, i) => { reindexed[t.id] = i + 1; });
+      peerTasks.forEach((t, i) => { reindexed[t.id] = i + 1; });
       // Swap the two positions
-      const targetId = sectionTasks[swapIdx].id;
+      const targetId = peerTasks[swapIdx].id;
       const temp = reindexed[taskId];
       reindexed[taskId] = reindexed[targetId];
       reindexed[targetId] = temp;

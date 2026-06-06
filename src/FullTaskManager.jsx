@@ -150,9 +150,9 @@ export default function FullTaskManager({
     setExpandedTaskId(null);
   };
 
-  const handleCreateTask = () => {
+  const handleCreateTask = (andSetLocation = false) => {
     if (!newTitle.trim()) return;
-    onAddTask({
+    const newTaskId = onAddTask({
       title: newTitle.trim(),
       notes: newNotes.trim(),
       priority: newPriority,
@@ -165,6 +165,9 @@ export default function FullTaskManager({
     setNewDueDate('');
     setNewGroupId('inbox');
     setShowNewTaskForm(false);
+    if (andSetLocation && newTaskId) {
+      onStartLocationSelection(newTaskId);
+    }
   };
 
   const handleTitleDoubleClick = (e, task) => {
@@ -368,11 +371,19 @@ export default function FullTaskManager({
               className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
             />
             <button
-              onClick={handleCreateTask}
+              onClick={() => handleCreateTask(false)}
               disabled={!newTitle.trim()}
               className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded transition-colors"
             >
               Create
+            </button>
+            <button
+              onClick={() => handleCreateTask(true)}
+              disabled={!newTitle.trim()}
+              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-semibold rounded transition-colors flex items-center gap-1"
+            >
+              <MapPin className="w-3 h-3" />
+              Create & Set Location
             </button>
             <button
               onClick={() => { setShowNewTaskForm(false); setNewTitle(''); setNewNotes(''); setNewPriority('medium'); setNewDueDate(''); setNewGroupId('inbox'); }}
@@ -555,14 +566,14 @@ export default function FullTaskManager({
                       {/* Reorder buttons */}
                       <div className="w-16 shrink-0 flex items-center justify-end gap-0.5">
                         <button
-                          onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up'); }}
+                          onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up', 'group'); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
                           title="Move Up"
                         >
                           <ChevronUp className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'down'); }}
+                          onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'down', 'group'); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
                           title="Move Down"
                         >
