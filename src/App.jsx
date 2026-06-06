@@ -428,6 +428,7 @@ export default function WorkflowApp() {
 
   // --- Task System States ---
   const [tasks, setTasks] = useState([]);
+  const [taskGroups, setTaskGroups] = useState([{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
   const [showTaskPanel, setShowTaskPanel] = useState(false);
   const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);
   const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);
@@ -693,6 +694,8 @@ export default function WorkflowApp() {
             // Load task data
             const loadedTasks = activeProj.tasks || [];
             setTasks(loadedTasks);
+            const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
+            setTaskGroups(loadedTaskGroups);
             
             // Show workspace-open reminder after a short delay
             setTimeout(() => {
@@ -857,7 +860,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, reminders, tasks, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, reminders, tasks, taskGroups, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -869,7 +872,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, reminders, tasks, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, reminders, tasks, taskGroups, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1750,7 +1753,7 @@ export default function WorkflowApp() {
     // Save current project state
     setProjects(prev => {
       const updated = prev.map(p => p.id === activeProjectId
-        ? { ...p, workspaces, activeTab, nextId }
+        ? { ...p, workspaces, activeTab, nextId, tasks, taskGroups }
         : p
       );
       localStorage.setItem('nexus-app-state', JSON.stringify(updated));
@@ -1768,6 +1771,8 @@ export default function WorkflowApp() {
     setActiveTab(target.activeTab || (targetWorkspaces.length > 0 ? targetWorkspaces[0].id : ''));
     setNextId(target.nextId || 10);
     setReminders(target.reminders || DEFAULT_REMINDERS);
+    setTasks(target.tasks || []);
+    setTaskGroups(target.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
     setIsAuthenticated(true);
@@ -2063,7 +2068,7 @@ export default function WorkflowApp() {
 
   // --- Import / Export ---
   const exportData = () => {
-    const data = { workspaces, activeTab, nextId, tasks };
+    const data = { workspaces, activeTab, nextId, tasks, taskGroups };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2147,6 +2152,7 @@ export default function WorkflowApp() {
           setActiveTab(importedData.activeTab || importedData.workspaces[0]?.id || '');
           setNextId(importedData.nextId || 10);
           if (importedData.tasks) setTasks(importedData.tasks);
+          if (importedData.taskGroups) setTaskGroups(importedData.taskGroups);
         } else {
           setErrorMessage("Invalid workflow file format.");
         }
@@ -2201,6 +2207,7 @@ export default function WorkflowApp() {
               setActiveTab(defaultProj.activeTab || defaultProj.workspaces?.[0]?.id || '');
               setNextId(defaultProj.nextId || 10);
               setTasks(defaultProj.tasks || []);
+              setTaskGroups(defaultProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }]);
             }
           } catch (restoreErr) {
             // Rollback to previous state
@@ -3057,9 +3064,10 @@ export default function WorkflowApp() {
   };
 
   const addTask = (taskData) => {
+    const newId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setTasks(prev => {
       const newTask = {
-        id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: newId,
         createdAt: new Date().toISOString(),
         status: 'todo',
         sortOrder: Math.max(0, ...prev.map(t => (t.sortOrder || 0))) + 1,
@@ -3067,6 +3075,7 @@ export default function WorkflowApp() {
       };
       return [...prev, newTask];
     });
+    return newId;
   };
 
   const updateTask = (taskId, updates) => {
@@ -3119,6 +3128,29 @@ export default function WorkflowApp() {
 
   const navigateToTaskLocation = (pinId, workspaceId) => {
     navigateToPin(pinId, workspaceId);
+  };
+
+  // --- Task Group CRUD ---
+  const addTaskGroup = (name) => {
+    setTaskGroups(prev => {
+      const newGroup = {
+        id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name,
+        sortOrder: Math.max(0, ...prev.map(g => (g.sortOrder || 0))) + 1,
+      };
+      return [...prev, newGroup];
+    });
+  };
+
+  const renameTaskGroup = (groupId, newName) => {
+    setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: newName } : g));
+  };
+
+  const deleteTaskGroup = (groupId) => {
+    if (groupId === 'inbox') return;
+    // Move tasks from deleted group to inbox
+    setTasks(prev => prev.map(t => (t.groupId === groupId ? { ...t, groupId: 'inbox' } : t)));
+    setTaskGroups(prev => prev.filter(g => g.id !== groupId));
   };
 
   const createGroup = (clientX, clientY) => {
@@ -5525,6 +5557,10 @@ export default function WorkflowApp() {
             isSelectingLocation={isSelectingTaskLocation}
             selectingLocationForTaskId={selectingLocationForTaskId}
             workspaces={workspaces}
+            taskGroups={taskGroups}
+            onAddGroup={addTaskGroup}
+            onRenameGroup={renameTaskGroup}
+            onDeleteGroup={deleteTaskGroup}
           />
         )}
 
