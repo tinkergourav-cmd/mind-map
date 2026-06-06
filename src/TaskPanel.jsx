@@ -20,7 +20,9 @@ import {
   Folder,
   MoreVertical,
   Pencil,
+  Maximize2,
 } from 'lucide-react';
+import { GROUP_COLORS } from './taskConstants';
 
 const STATUS_OPTIONS = [
   { value: 'todo', label: 'Todo', icon: Circle, color: 'text-slate-400' },
@@ -41,6 +43,11 @@ function getStatusConfig(status) {
 
 function getPriorityConfig(priority) {
   return PRIORITY_OPTIONS.find(p => p.value === priority) || PRIORITY_OPTIONS[1];
+}
+
+function getGroupColor(group) {
+  if (!group || !group.color) return GROUP_COLORS[0];
+  return GROUP_COLORS.find(c => c.id === group.color) || GROUP_COLORS[0];
 }
 
 function getToday() {
@@ -79,6 +86,8 @@ export default function TaskPanel({
   onAddGroup,
   onRenameGroup,
   onDeleteGroup,
+  onUpdateGroupColor,
+  onExpandToFullscreen,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -305,6 +314,15 @@ export default function TaskPanel({
           >
             <Folder className="w-3.5 h-3.5" />
           </button>
+          {onExpandToFullscreen && (
+            <button
+              onClick={onExpandToFullscreen}
+              className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors"
+              title="Expand to Full Screen"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => setShowNewTaskForm(true)}
             className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors"
@@ -447,19 +465,23 @@ export default function TaskPanel({
           >
             All Groups
           </button>
-          {groups.map(g => (
-            <button
-              key={g.id}
-              onClick={() => setActiveGroupFilter(g.id)}
-              className={`px-2 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${
-                activeGroupFilter === g.id
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              }`}
-            >
-              {g.name}
-            </button>
-          ))}
+          {groups.map(g => {
+            const gColor = getGroupColor(g);
+            return (
+              <button
+                key={g.id}
+                onClick={() => setActiveGroupFilter(g.id)}
+                className={`px-2 py-0.5 text-[10px] font-semibold rounded-full transition-colors flex items-center gap-1 ${
+                  activeGroupFilter === g.id
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${gColor.dotColor} shrink-0`}></span>
+                {g.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -677,8 +699,8 @@ export default function TaskPanel({
                   ) : (
                     /* Display Mode - enhanced preview with quick actions */
                     <div
-                      className={`px-3 py-2 border-b border-slate-50 cursor-pointer group transition-colors ${
-                        selectedTaskId === task.id ? 'bg-indigo-50 border-l-2 border-l-indigo-400' : 'hover:bg-slate-50'
+                      className={`px-3 py-1 border-b border-slate-50 cursor-pointer group transition-colors ${
+                        selectedTaskId === task.id ? 'bg-indigo-50 border-l-2 border-l-indigo-400' : `hover:bg-slate-50 border-l-2 ${(() => { const tg = groups.find(g => g.id === (task.groupId || 'inbox')); return getGroupColor(tg).headerBorder; })()}`
                       }`}
                       onClick={() => handleTaskClick(task)}
                       onDoubleClick={() => handleTaskDoubleClick(task)}
@@ -756,7 +778,7 @@ export default function TaskPanel({
                       </div>
 
                       {/* Row 2: Group, Priority, Due Date */}
-                      <div className="flex items-center gap-2 mt-1 ml-6">
+                      <div className="flex items-center gap-2 mt-0.5 ml-6">
                         {/* Group Name */}
                         <span className="text-[10px] text-slate-400 font-medium truncate">
                           {getGroupName(task.groupId || 'inbox')}

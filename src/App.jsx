@@ -13,6 +13,7 @@ import MiniMap from './MiniMap';
 import PinPanel, { PIN_ICONS } from './PinPanel';
 import ReminderPanel from './ReminderPanel';
 import TaskPanel from './TaskPanel';
+import FullTaskManager from './FullTaskManager';
 import { GROUP_COLORS } from './taskConstants';
 
 // --- Premium Color Themes (10 colors) ---
@@ -431,6 +432,7 @@ export default function WorkflowApp() {
   const [tasks, setTasks] = useState([]);
   const [taskGroups, setTaskGroups] = useState([{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }]);
   const [showTaskPanel, setShowTaskPanel] = useState(false);
+  const [taskViewMode, setTaskViewMode] = useState('sidebar');
   const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);
   const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);
 
@@ -5590,7 +5592,7 @@ export default function WorkflowApp() {
         )}
 
         {/* --- Task Panel --- */}
-        {showTaskPanel && viewMode === 'canvas' && (
+        {showTaskPanel && viewMode === 'canvas' && taskViewMode === 'sidebar' && (
           <TaskPanel
             tasks={tasks}
             showPanel={showTaskPanel}
@@ -5610,6 +5612,32 @@ export default function WorkflowApp() {
             onRenameGroup={renameTaskGroup}
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroupColor={updateTaskGroupColor}
+            onExpandToFullscreen={() => setTaskViewMode('fullscreen')}
+          />
+        )}
+
+        {/* --- Full Task Manager (fullscreen overlay) --- */}
+        {showTaskPanel && taskViewMode === 'fullscreen' && (
+          <FullTaskManager
+            tasks={tasks}
+            showPanel={showTaskPanel}
+            onClose={() => { setShowTaskPanel(false); setTaskViewMode('sidebar'); }}
+            onAddTask={addTask}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
+            onReorderTask={reorderTask}
+            onStartLocationSelection={startLocationSelection}
+            onNavigateToLocation={navigateToTaskLocation}
+            onCancelLocationSelection={cancelLocationSelection}
+            isSelectingLocation={isSelectingTaskLocation}
+            selectingLocationForTaskId={selectingLocationForTaskId}
+            workspaces={workspaces}
+            taskGroups={taskGroups}
+            onAddGroup={addTaskGroup}
+            onRenameGroup={renameTaskGroup}
+            onDeleteGroup={deleteTaskGroup}
+            onUpdateGroupColor={updateTaskGroupColor}
+            onSwitchToSidebar={() => setTaskViewMode('sidebar')}
           />
         )}
 

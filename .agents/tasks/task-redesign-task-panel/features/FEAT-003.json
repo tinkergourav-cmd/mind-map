@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Redesign sidebar TaskPanel for improved density and create the Full-Screen Task Manager view with spreadsheet-style layout, group-centric view, expandable notes, and group colors",
+  "status": "in_progress",
+  "steps": [
+    "Create src/FullTaskManager.jsx - a new full-screen task manager component. It receives the same props as TaskPanel plus: onSwitchToSidebar (callback to switch back to sidebar view). This component will occupy most of the screen space (rendered as an overlay or as the main content area replacing the canvas).",
+    "FULL-SCREEN LAYOUT: The FullTaskManager uses a group-centric view (not date-section-centric). Layout: top toolbar with search, status filter, 'Collapse to Sidebar' button. Main content area shows all groups as collapsible sections simultaneously. Each group section has: colored header bar (using group.color), group name, task count, collapse/expand toggle.",
+    "TABLE LAYOUT: Within each group section, render tasks in a compact spreadsheet-style table. Columns: Status (checkbox/icon), Task Title, Location (pin icon if has location), Priority (badge), Due Date. One task = one row. Minimal padding (py-1 px-2). No multi-line cards. Use text-xs for density. Table header row with column labels in text-[10px] uppercase text-slate-400.",
+    "EXPANDABLE NOTES: When a user clicks a task row, expand that task inline - show the full task note in a bordered area directly beneath the clicked row and above the next task. Only one task can be expanded at a time. Clicking another row collapses the previous and expands the new one. The expanded area shows: full notes text, edit button, delete button, set location button, group reassignment dropdown. Use selectedTaskId state for tracking which is expanded.",
+    "INLINE EDITING: In the expanded row area, allow inline editing of status (dropdown), priority (dropdown), due date (date input), group (dropdown), and notes (textarea). Provide Save/Cancel buttons. Double-click on task title to edit it inline.",
+    "GROUP COLORS IN FULL VIEW: Each group header uses the group's assigned color for: left border (4px), background tint, text color. Task rows within a group have a subtle left-border-color matching the group. Add a color picker (small color dots) in the group header for changing group color.",
+    "SIDEBAR DENSITY IMPROVEMENTS: Modify src/TaskPanel.jsx to reduce vertical space per task. Changes: reduce py-2 to py-1 on task rows, reduce gap-2 to gap-1, make Row 2 (group/priority/due) more compact with smaller text, remove the section icon emojis, reduce section header padding. Goal: fit 50%+ more tasks visible without scrolling.",
+    "SIDEBAR GROUP COLORS: In the existing TaskPanel.jsx sidebar view, apply group colors to: the group filter buttons (use colored dot or colored bg when active), and the group name text in each task row (colored text matching group color).",
+    "ADD VIEW TOGGLE: In src/App.jsx, add state `taskViewMode` with values 'sidebar' and 'fullscreen'. Add an expand/maximize button in the TaskPanel header that switches to fullscreen mode. In fullscreen mode, render FullTaskManager instead of TaskPanel. The FullTaskManager has a 'collapse to sidebar' button that switches back.",
+    "RENDERING IN APP.JSX: When taskViewMode is 'fullscreen' and showTaskPanel is true, render FullTaskManager as a full-screen overlay (fixed inset-0 z-50 bg-white) or as the main content. Pass all the same task-related props. Ensure the user can close/exit back to the canvas.",
+    "Ensure group management (add/rename/delete groups, color picker) is available in both views."
+  ],
+  "acceptance_criteria": [
+    "Sidebar view shows tasks with reduced padding - visibly more compact than before",
+    "A button in the sidebar header expands to full-screen task manager",
+    "Full-screen view shows ALL groups simultaneously as collapsible sections (not filtered one at a time)",
+    "Each group section has a colored header matching the group's assigned color",
+    "Tasks display in single-row table format: Status | Title | Location | Priority | Due Date",
+    "Clicking a task row expands it inline showing full notes and edit controls",
+    "Only one task is expanded at a time - clicking another collapses the previous",
+    "User can switch back from full-screen to sidebar view",
+    "Group colors appear on group headers, task row left borders, and group filter indicators",
+    "Task ordering (move up/down) works in both views",
+    "Status can be toggled inline in both views",
+    "Search and status filters work in the full-screen view",
+    "New task creation works in the full-screen view",
+    "npm run build succeeds without errors"
+  ],
+  "verification": [
+    "Run `npm run build` to confirm no compilation errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
