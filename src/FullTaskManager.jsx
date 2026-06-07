@@ -7,7 +7,6 @@ import {
   ChevronRight,
   MapPin,
   Navigation,
-  Calendar,
   Trash2,
   Circle,
   CheckCircle,
@@ -41,24 +40,6 @@ function getStatusConfig(status) {
 
 function getPriorityConfig(priority) {
   return PRIORITY_OPTIONS.find(p => p.value === priority) || PRIORITY_OPTIONS[1];
-}
-
-function getToday() {
-  const now = new Date();
-  return now.toISOString().split('T')[0];
-}
-
-function formatDueDate(dueDate) {
-  if (!dueDate) return '';
-  const today = getToday();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-  if (dueDate === today) return 'Today';
-  if (dueDate === tomorrowStr) return 'Tomorrow';
-  if (dueDate < today) return 'Overdue';
-  return new Date(dueDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function getGroupColor(group) {
@@ -104,7 +85,6 @@ export default function FullTaskManager({
   const [newTitle, setNewTitle] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [newPriority, setNewPriority] = useState('medium');
-  const [newDueDate, setNewDueDate] = useState('');
   const [newGroupId, setNewGroupId] = useState('inbox');
 
   // Edit form state
@@ -112,7 +92,6 @@ export default function FullTaskManager({
   const [editNotes, setEditNotes] = useState('');
   const [editStatus, setEditStatus] = useState('todo');
   const [editPriority, setEditPriority] = useState('medium');
-  const [editDueDate, setEditDueDate] = useState('');
   const [editGroupId, setEditGroupId] = useState('inbox');
   const [editingTitleTaskId, setEditingTitleTaskId] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState('');
@@ -169,7 +148,6 @@ export default function FullTaskManager({
       setEditNotes(task.notes || '');
       setEditStatus(task.status);
       setEditPriority(task.priority);
-      setEditDueDate(task.dueDate || '');
       setEditGroupId(task.groupId || 'inbox');
     }
   };
@@ -181,7 +159,6 @@ export default function FullTaskManager({
       notes: editNotes.trim(),
       status: editStatus,
       priority: editPriority,
-      dueDate: editDueDate || null,
       groupId: editGroupId,
     });
     setEditingTaskId(null);
@@ -193,13 +170,11 @@ export default function FullTaskManager({
       title: newTitle.trim(),
       notes: newNotes.trim(),
       priority: newPriority,
-      dueDate: newDueDate || null,
       groupId: newGroupId,
     });
     setNewTitle('');
     setNewNotes('');
     setNewPriority('medium');
-    setNewDueDate('');
     setNewGroupId('inbox');
     setShowNewTaskForm(false);
     if (andSetLocation && newTaskId) {
@@ -400,12 +375,6 @@ export default function FullTaskManager({
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))}
               </select>
-              <input
-                type="date"
-                value={newDueDate}
-                onChange={(e) => setNewDueDate(e.target.value)}
-                className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-              />
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -424,7 +393,7 @@ export default function FullTaskManager({
                 Create & Set Location
               </button>
               <button
-                onClick={() => { setShowNewTaskForm(false); setNewTitle(''); setNewNotes(''); setNewPriority('medium'); setNewDueDate(''); setNewGroupId('inbox'); }}
+                onClick={() => { setShowNewTaskForm(false); setNewTitle(''); setNewNotes(''); setNewPriority('medium'); setNewGroupId('inbox'); }}
                 className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded transition-colors"
               >
                 Cancel
@@ -768,15 +737,6 @@ export default function FullTaskManager({
                                   <option key={p.value} value={p.value}>{p.label}</option>
                                 ))}
                               </select>
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] text-slate-500 font-medium">Due Date</span>
-                              <input
-                                type="date"
-                                value={editDueDate}
-                                onChange={(e) => setEditDueDate(e.target.value)}
-                                className="text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                              />
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] text-slate-500 font-medium">Group</span>
