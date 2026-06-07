@@ -334,8 +334,7 @@ const DEFAULT_REMINDERS = [
 ];
 
 const MARKDOWN_ZOOM_THRESHOLD = 0.6;
-const MAX_CARD_WIDTH = 600;
-const MAX_CARD_HEIGHT = 800;
+const NODE_DIMS = { width: 280, height: 180 };
 
 export default function WorkflowApp() {
   // --- Core State ---
@@ -506,10 +505,8 @@ export default function WorkflowApp() {
     };
   }, [transform]);
 
-  // --- Node Dimensions Helper ---
-  const getNodeDimensions = useCallback((node) => {
-    return { width: 280, height: 180 };
-  }, []);
+  // --- Node Dimensions (fixed) ---
+  // NODE_DIMS constant defined at module level: { width: 280, height: 180 }
 
   // --- Zoom Helpers ---
   const handleZoom = useCallback((delta) => {
@@ -2626,7 +2623,7 @@ export default function WorkflowApp() {
         currentY: newY
       }));
 
-      const activeGroupHoverId = getSpatiallyHoveredGroup(newX, newY, getNodeDimensions(nodes.find(n => n.id === draggingNode.id) || {}).width);
+      const activeGroupHoverId = getSpatiallyHoveredGroup(newX, newY, NODE_DIMS.width);
       setDragHoveredGroupId(activeGroupHoverId);
 
     } else if (draggingGroup) {
@@ -2691,7 +2688,7 @@ export default function WorkflowApp() {
         currentY: draggingPin.initialY + dy
       }));
     }
-  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes]);
 
 
   const handlePointerUp = useCallback(() => {
@@ -2722,8 +2719,7 @@ export default function WorkflowApp() {
             if (originalNode && originalNode.groupId) {
               const originalGroup = ws.groups.find(g => g.id === originalNode.groupId);
               if (originalGroup) {
-                const nodeForDims = ws.nodes.find(n => n.id === draggingNode.id) || {};
-                const NODE_WIDTH_VAL = getNodeDimensions(nodeForDims).width;
+                const NODE_WIDTH_VAL = NODE_DIMS.width;
                 const nodeCenterX = dragRef.currentX + NODE_WIDTH_VAL / 2;
                 const nodeCenterY = dragRef.currentY + 80;
                 const gW = originalGroup.width || 440;
@@ -2883,7 +2879,7 @@ export default function WorkflowApp() {
     setDraggingImage(null);
     setDraggingPin(null);
     dragSnapshot.current = null;
-  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting]);
 
 
   // --- Node, Edge, and Group Creators ---
@@ -3749,7 +3745,7 @@ export default function WorkflowApp() {
       return null;
     }
 
-    const dims = getNodeDimensions(node);
+    const dims = NODE_DIMS;
     const coords = getLiveCoordinates(node, false);
     return {
       x: isSource ? coords.x + dims.width : coords.x,
@@ -4408,7 +4404,7 @@ export default function WorkflowApp() {
                         const centerY = rect.height / 2;
                         
                         setTransform({
-                          x: centerX - n.x * transform.scale - (getNodeDimensions(n).width * transform.scale) / 2,
+                          x: centerX - n.x * transform.scale - (NODE_DIMS.width * transform.scale) / 2,
                           y: centerY - n.y * transform.scale - (140 * transform.scale) / 2,
                           scale: transform.scale
                         });
@@ -4726,7 +4722,7 @@ export default function WorkflowApp() {
 
               const theme = THEMES[node.theme] || THEMES.blue;
               const isDragging = draggingNode?.id === node.id;
-              const nodeDims = getNodeDimensions(node);
+              const nodeDims = NODE_DIMS;
               
               const coords = getLiveCoordinates(node, false);
               const displayX = coords.x;
@@ -4856,7 +4852,7 @@ export default function WorkflowApp() {
                         <textarea 
                           autoFocus
                           onBlur={() => setEditingTextNode(null)}
-                          className="w-full h-full min-h-[2rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 custom-scrollbar" 
+                          className="w-full h-full min-h-[2rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 overflow-y-auto custom-scrollbar" 
                           value={node.content || ''} 
                           onChange={(e) => updateNode(node.id, { content: e.target.value })} 
                           placeholder="Write notes or details..." 
@@ -4864,8 +4860,8 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words overflow-y-auto custom-scrollbar ${editMode ? 'cursor-text' : 'cursor-default'}`}
-                          style={{ maxHeight: nodeDims.height - 80, overflowWrap: 'break-word', wordBreak: 'break-word' }}
+                          className={`w-full h-full bg-transparent text-slate-600 text-xs leading-relaxed break-words overflow-y-auto custom-scrollbar ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
