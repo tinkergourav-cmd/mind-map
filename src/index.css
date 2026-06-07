@@ -13,3 +13,32 @@ html, body, #root {
   width: 100%;
   overflow: hidden;
 }
+
+/* Markdown content styles for card rendering */
+.markdown-content ul {
+  margin-left: 0;
+}
+
+.markdown-content ol {
+  margin-left: 0;
+}
+
+.markdown-content ul ul,
+.markdown-content ol ol,
+.markdown-content ul ol,
+.markdown-content ol ul {
+  margin-left: 0.5rem;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+}
+
+.markdown-content pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.markdown-content pre code {
+  white-space: pre;
+}
