@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   X,
   Plus,
@@ -94,6 +94,10 @@ export default function FullTaskManager({
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
+  const [statusDropdownTaskId, setStatusDropdownTaskId] = useState(null);
+  const [groupDropdownTaskId, setGroupDropdownTaskId] = useState(null);
+  const statusDropdownRef = useRef(null);
+  const groupDropdownRef = useRef(null);
 
   // New task form state
   const [newTitle, setNewTitle] = useState('');
@@ -117,6 +121,20 @@ export default function FullTaskManager({
   const [renamingGroupId, setRenamingGroupId] = useState(null);
   const [renameGroupValue, setRenameGroupValue] = useState('');
   const [colorPickerGroupId, setColorPickerGroupId] = useState(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (statusDropdownTaskId && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target)) {
+        setStatusDropdownTaskId(null);
+      }
+      if (groupDropdownTaskId && groupDropdownRef.current && !groupDropdownRef.current.contains(e.target)) {
+        setGroupDropdownTaskId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [statusDropdownTaskId, groupDropdownTaskId]);
 
   if (!showPanel) return null;
 
@@ -493,13 +511,12 @@ export default function FullTaskManager({
               {/* Table header */}
               {!isCollapsed && groupTasks.length > 0 && (
                 <div className="flex items-center px-4 py-1 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400 font-medium">
-                  <span className="w-6 shrink-0">Status</span>
-                  <span className="shrink-0" style={{ width: '360px' }}>Task</span>
-                  <span className="w-14 shrink-0 text-center">Group</span>
-                  <span className="w-14 shrink-0 text-center">Priority</span>
-                  <span className="w-16 shrink-0 text-center">Due Date</span>
-                  <span className="w-8 shrink-0 text-center">Loc</span>
-                  <span className="w-20 shrink-0"></span>
+                  <span className="w-24 shrink-0">Status</span>
+                  <span className="flex-1 min-w-0">Task</span>
+                  <span className="w-10 shrink-0 text-center">Loc</span>
+                  <span className="w-20 shrink-0 text-center">Actions</span>
+                  <span className="w-24 shrink-0 text-center">Group</span>
+                  <span className="w-40 shrink-0">Notes</span>
                 </div>
               )}
 
@@ -510,7 +527,7 @@ export default function FullTaskManager({
                 const priorityCfg = getPriorityConfig(task.priority);
                 const isEditing = editingTaskId === task.id;
                 const isSelected = selectedTaskId === task.id;
-                const taskGroup = groups.find(g => g.id === (task.groupId || 'inbox'));
+                const taskGroup = groups.find(g => g.id === (task.groupId || 'inbox')) || { id: 'inbox', name: 'Ungrouped' };
 
                 return (
                   <div key={task.id}>
@@ -522,21 +539,48 @@ export default function FullTaskManager({
                       onClick={() => handleRowClick(task)}
                       onDoubleClick={() => handleRowDoubleClick(task)}
                     >
-                      {/* Status icon */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
-                          onUpdateTask(task.id, { status: nextStatus });
-                        }}
-                        className={`w-6 shrink-0 ${statusCfg.color} hover:text-indigo-600 transition-colors`}
-                        title={`Status: ${statusCfg.label}`}
-                      >
-                        <StatusIcon className="w-4 h-4" />
-                      </button>
+                      {/* Status - readable text with dropdown */}
+                      <div className="w-24 shrink-0 relative" ref={statusDropdownTaskId === task.id ? statusDropdownRef : null}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStatusDropdownTaskId(statusDropdownTaskId === task.id ? null : task.id);
+                            setGroupDropdownTaskId(null);
+                          }}
+                          className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors ${statusCfg.color}`}
+                          title="Change status"
+                        >
+                          <StatusIcon className="w-3 h-3" />
+                          <span>{statusCfg.label}</span>
+                          <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                        </button>
+                        {statusDropdownTaskId === task.id && (
+                          <div className="absolute top-full left-0 mt-0.5 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+                            {STATUS_OPTIONS.map(s => {
+                              const SIcon = s.icon;
+                              return (
+                                <button
+                                  key={s.value}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateTask(task.id, { status: s.value });
+                                    setStatusDropdownTaskId(null);
+                                  }}
+                                  className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors ${
+                                    task.status === s.value ? 'bg-indigo-50 font-medium' : ''
+                                  }`}
+                                >
+                                  <SIcon className={`w-3.5 h-3.5 ${s.color}`} />
+                                  <span className="text-slate-700">{s.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Title */}
-                      <div className="shrink-0 min-w-0" style={{ width: '360px' }}>
+                      <div className="flex-1 min-w-0">
                         {editingTitleTaskId === task.id ? (
                           <input
                             type="text"
@@ -558,33 +602,8 @@ export default function FullTaskManager({
                         )}
                       </div>
 
-                      {/* Group badge */}
-                      <div className="w-14 shrink-0 text-center">
-                        {taskGroup && taskGroup.id !== 'inbox' && (
-                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 truncate inline-block max-w-[48px]">
-                            {taskGroup.name}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Priority */}
-                      <div className="w-14 shrink-0 text-center">
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${priorityCfg.badgeClass}`}>
-                          {priorityCfg.label}
-                        </span>
-                      </div>
-
-                      {/* Due Date */}
-                      <div className="w-16 shrink-0 text-center">
-                        {task.dueDate && (
-                          <span className={`text-[10px] ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-500'}`}>
-                            {formatDueDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-
                       {/* Location */}
-                      <div className="w-8 shrink-0 text-center">
+                      <div className="w-10 shrink-0 text-center">
                         {pinExistsForTask(task) && (
                           <button
                             onClick={(e) => {
@@ -600,7 +619,7 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Actions: Edit + Reorder */}
-                      <div className="w-20 shrink-0 flex items-center justify-end gap-0.5">
+                      <div className="w-20 shrink-0 flex items-center justify-center gap-0.5">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleRowDoubleClick(task); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition-colors"
@@ -623,11 +642,56 @@ export default function FullTaskManager({
                           <ChevronDown className="w-3 h-3" />
                         </button>
                       </div>
+
+                      {/* Group dropdown */}
+                      <div className="w-24 shrink-0 text-center relative" ref={groupDropdownTaskId === task.id ? groupDropdownRef : null}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setGroupDropdownTaskId(groupDropdownTaskId === task.id ? null : task.id);
+                            setStatusDropdownTaskId(null);
+                          }}
+                          className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors inline-flex items-center gap-0.5 max-w-[88px] truncate"
+                          title="Change group"
+                        >
+                          <span className="truncate">{taskGroup.name}</span>
+                          <ChevronDown className="w-2.5 h-2.5 opacity-50 shrink-0" />
+                        </button>
+                        {groupDropdownTaskId === task.id && (
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+                            {groups.map(g => (
+                              <button
+                                key={g.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onUpdateTask(task.id, { groupId: g.id });
+                                  setGroupDropdownTaskId(null);
+                                }}
+                                className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors ${
+                                  (task.groupId || 'inbox') === g.id ? 'bg-indigo-50 font-medium' : ''
+                                }`}
+                              >
+                                <Folder className="w-3 h-3 text-slate-400" />
+                                <span className="text-slate-700">{g.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Notes preview (small, inline in row) */}
+                      <div className="w-40 shrink-0">
+                        {task.notes && task.notes.trim() && (
+                          <span className="text-[10px] text-slate-400 truncate block">
+                            {task.notes.substring(0, 60)}{task.notes.length > 60 ? '...' : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Selected: notes preview (read-only) */}
+                    {/* Selected: full notes (read-only, no truncation) */}
                     {isSelected && !isEditing && task.notes && task.notes.trim() && (
-                      <div className="text-[11px] text-slate-500 px-4 py-1.5 bg-slate-50/50 border-b border-slate-100 overflow-hidden max-h-[3.5rem] line-clamp-3">
+                      <div className="text-xs text-slate-600 px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 whitespace-pre-wrap leading-relaxed">
                         {task.notes}
                       </div>
                     )}
