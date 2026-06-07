@@ -85,7 +85,10 @@ export default function FullTaskManager({
   onRenameGroup,
   onDeleteGroup,
   onUpdateGroupColor,
+  onReorderGroup,
+  mode = 'fullscreen',
 }) {
+  const isPanel = mode === 'panel';
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [collapsedGroups, setCollapsedGroups] = useState({});
@@ -278,13 +281,13 @@ export default function FullTaskManager({
   const sortedGroups = [...groups].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+    <div className={isPanel ? 'w-1/2 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0 h-full' : 'fixed inset-0 z-50 bg-white flex flex-col'}>
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0">
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0 flex-wrap">
         <h2 className="text-sm font-bold text-slate-800 shrink-0">Task Manager</h2>
 
         {/* Search */}
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 flex-1 max-w-xs">
+        <div className={`flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 ${isPanel ? 'flex-1 min-w-0' : 'flex-1 max-w-xs'}`}>
           <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <input
             type="text"
@@ -301,7 +304,7 @@ export default function FullTaskManager({
         </div>
 
         {/* Status Filters */}
-        <div className="flex items-center gap-1">
+        <div className={`flex items-center gap-1 ${isPanel ? 'flex-wrap' : ''}`}>
           {filterButtons.map(fb => (
             <button
               key={fb.value}
@@ -325,7 +328,7 @@ export default function FullTaskManager({
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="New group..."
-              className="text-xs bg-white border border-slate-200 rounded px-2 py-1 w-28 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className={`text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300 w-28`}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateGroup(); }}
             />
             <button
@@ -361,7 +364,7 @@ export default function FullTaskManager({
       {/* New Task Form (inline at top) */}
       {showNewTaskForm && (
         <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 shrink-0">
-          <div className="flex items-center gap-2 max-w-4xl">
+          <div className={`${isPanel ? 'flex flex-col gap-2' : 'flex items-center gap-2 max-w-4xl'}`}>
             <input
               type="text"
               value={newTitle}
@@ -375,54 +378,58 @@ export default function FullTaskManager({
               value={newNotes}
               onChange={(e) => setNewNotes(e.target.value)}
               placeholder="Notes (optional)"
-              className="w-48 text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className={`text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300 ${isPanel ? 'w-full' : 'w-48'}`}
               rows={1}
             />
-            <select
-              value={newGroupId}
-              onChange={(e) => setNewGroupId(e.target.value)}
-              className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-            >
-              {groups.map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-            <select
-              value={newPriority}
-              onChange={(e) => setNewPriority(e.target.value)}
-              className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-            >
-              {PRIORITY_OPTIONS.map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={newDueDate}
-              onChange={(e) => setNewDueDate(e.target.value)}
-              className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-            />
-            <button
-              onClick={() => handleCreateTask(false)}
-              disabled={!newTitle.trim()}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded transition-colors"
-            >
-              Create
-            </button>
-            <button
-              onClick={() => handleCreateTask(true)}
-              disabled={!newTitle.trim()}
-              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-semibold rounded transition-colors flex items-center gap-1"
-            >
-              <MapPin className="w-3 h-3" />
-              Create & Set Location
-            </button>
-            <button
-              onClick={() => { setShowNewTaskForm(false); setNewTitle(''); setNewNotes(''); setNewPriority('medium'); setNewDueDate(''); setNewGroupId('inbox'); }}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded transition-colors"
-            >
-              Cancel
-            </button>
+            <div className={`flex items-center gap-2 ${isPanel ? 'flex-wrap' : ''}`}>
+              <select
+                value={newGroupId}
+                onChange={(e) => setNewGroupId(e.target.value)}
+                className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              >
+                {groups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+              <select
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value)}
+                className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              >
+                {PRIORITY_OPTIONS.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={newDueDate}
+                onChange={(e) => setNewDueDate(e.target.value)}
+                className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleCreateTask(false)}
+                disabled={!newTitle.trim()}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded transition-colors"
+              >
+                Create
+              </button>
+              <button
+                onClick={() => handleCreateTask(true)}
+                disabled={!newTitle.trim()}
+                className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-semibold rounded transition-colors flex items-center gap-1"
+              >
+                <MapPin className="w-3 h-3" />
+                Create & Set Location
+              </button>
+              <button
+                onClick={() => { setShowNewTaskForm(false); setNewTitle(''); setNewNotes(''); setNewPriority('medium'); setNewDueDate(''); setNewGroupId('inbox'); }}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -463,6 +470,24 @@ export default function FullTaskManager({
 
                 {/* Group actions */}
                 <div className="flex items-center gap-1 ml-auto">
+                  {/* Reorder Up */}
+                  <button
+                    onClick={() => onReorderGroup(group.id, 'up')}
+                    className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                    title="Move Group Up"
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </button>
+
+                  {/* Reorder Down */}
+                  <button
+                    onClick={() => onReorderGroup(group.id, 'down')}
+                    className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                    title="Move Group Down"
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+
                   {/* Color picker toggle */}
                   <button
                     onClick={() => setColorPickerGroupId(colorPickerGroupId === group.id ? null : group.id)}
@@ -513,12 +538,12 @@ export default function FullTaskManager({
               {/* Table header */}
               {!isCollapsed && groupTasks.length > 0 && (
                 <div className="flex items-center px-4 py-1 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400 font-medium">
-                  <span className="w-24 shrink-0">Status</span>
-                  <span className="w-[360px] shrink-0">Task</span>
+                  <span className={`${isPanel ? 'w-20' : 'w-24'} shrink-0`}>Status</span>
+                  <span className={`${isPanel ? 'flex-1 min-w-0' : 'w-[360px] shrink-0'}`}>Task</span>
                   <span className="w-10 shrink-0 text-center">Loc</span>
-                  <span className="w-20 shrink-0 text-center">Actions</span>
-                  <span className="w-24 shrink-0 text-center">Group</span>
-                  <span className="w-40 shrink-0">Notes</span>
+                  <span className={`${isPanel ? 'w-16' : 'w-20'} shrink-0 text-center`}>Actions</span>
+                  <span className={`${isPanel ? 'w-20' : 'w-24'} shrink-0 text-center`}>Group</span>
+                  <span className={`${isPanel ? 'w-24' : 'w-40'} shrink-0`}>Notes</span>
                 </div>
               )}
 
@@ -542,7 +567,7 @@ export default function FullTaskManager({
                       onDoubleClick={() => handleRowDoubleClick(task)}
                     >
                       {/* Status - readable text with dropdown */}
-                      <div className="w-24 shrink-0 relative" ref={statusDropdownTaskId === task.id ? statusDropdownRef : null}>
+                      <div className={`${isPanel ? 'w-20' : 'w-24'} shrink-0 relative`} ref={statusDropdownTaskId === task.id ? statusDropdownRef : null}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -582,7 +607,7 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Title */}
-                      <div className="w-[360px] shrink-0">
+                      <div className={`${isPanel ? 'flex-1 min-w-0' : 'w-[360px] shrink-0'}`}>
                         {editingTitleTaskId === task.id ? (
                           <input
                             type="text"
@@ -622,7 +647,7 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Actions: Edit + Reorder */}
-                      <div className="w-20 shrink-0 flex items-center justify-center gap-0.5">
+                      <div className={`${isPanel ? 'w-16' : 'w-20'} shrink-0 flex items-center justify-center gap-0.5`}>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleRowDoubleClick(task); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition-colors"
@@ -647,7 +672,7 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Group dropdown */}
-                      <div className="w-24 shrink-0 text-center relative" ref={groupDropdownTaskId === task.id ? groupDropdownRef : null}>
+                      <div className={`${isPanel ? 'w-20' : 'w-24'} shrink-0 text-center relative`} ref={groupDropdownTaskId === task.id ? groupDropdownRef : null}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -683,10 +708,13 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Notes preview (small, inline in row) */}
-                      <div className="w-40 shrink-0">
+                      <div className={`${isPanel ? 'w-24' : 'w-40'} shrink-0`}>
                         {task.notes && task.notes.trim() && (
                           <span className="text-[10px] text-slate-400 truncate block">
-                            {task.notes.substring(0, 60)}{task.notes.length > 60 ? '...' : ''}
+                            {isPanel
+                              ? <>{task.notes.substring(0, 30)}{task.notes.length > 30 ? '...' : ''}</>
+                              : <>{task.notes.substring(0, 60)}{task.notes.length > 60 ? '...' : ''}</>
+                            }
                           </span>
                         )}
                       </div>

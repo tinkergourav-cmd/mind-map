@@ -404,6 +404,7 @@ export default function WorkflowApp() {
   const [draggingPin, setDraggingPin] = useState(null);
   const [pinsVisible, setPinsVisible] = useState(true);
   const lastPKeyTimeRef = useRef(0);
+  const lastTKeyTimeRef = useRef(0);
   const pinDraggedRef = useRef(false);
 
   // --- Reminder & Wellness System States ---
@@ -430,7 +431,7 @@ export default function WorkflowApp() {
   // --- Task System States ---
   const [tasks, setTasks] = useState([]);
   const [taskGroups, setTaskGroups] = useState([{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }]);
-  const [showTaskPanel, setShowTaskPanel] = useState(false);
+  const [taskPanelMode, setTaskPanelMode] = useState('closed'); // 'closed' | 'panel' | 'fullscreen'
   const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);
   const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);
 
@@ -1416,14 +1417,27 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleReminderKey);
   }, []);
 
-  // --- T key toggles task panel ---
+  // --- T key toggles task panel (single press), TT (double-press) toggles fullscreen ---
   useEffect(() => {
     const handleTaskKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
       if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
-        setShowTaskPanel(prev => !prev);
+        const now = Date.now();
+        const timeSinceLast = now - lastTKeyTimeRef.current;
+        lastTKeyTimeRef.current = now;
+        if (timeSinceLast < 300) {
+          // Double-press T: toggle fullscreen mode
+          setTaskPanelMode(prev => prev === 'fullscreen' ? 'panel' : 'fullscreen');
+        } else {
+          // Single press T: toggle side panel (delayed to allow double-press detection)
+          setTimeout(() => {
+            if (Date.now() - lastTKeyTimeRef.current >= 280) {
+              setTaskPanelMode(prev => prev === 'closed' ? 'panel' : 'closed');
+            }
+          }, 300);
+        }
       }
     };
     window.addEventListener('keydown', handleTaskKey);
@@ -2535,7 +2549,7 @@ export default function WorkflowApp() {
 
       setIsSelectingTaskLocation(false);
       setSelectingLocationForTaskId(null);
-      setShowTaskPanel(true);
+      setTaskPanelMode('panel');
       showToast('Task location set');
       return;
     }
@@ -3153,13 +3167,13 @@ export default function WorkflowApp() {
   const startLocationSelection = (taskId) => {
     setIsSelectingTaskLocation(true);
     setSelectingLocationForTaskId(taskId);
-    setShowTaskPanel(false);
+    setTaskPanelMode('closed');
   };
 
   const cancelLocationSelection = () => {
     setIsSelectingTaskLocation(false);
     setSelectingLocationForTaskId(null);
-    setShowTaskPanel(true);
+    setTaskPanelMode('panel');
   };
 
   const navigateToTaskLocation = (pinId, workspaceId) => {
@@ -3193,6 +3207,22 @@ export default function WorkflowApp() {
     // Move tasks from deleted group to inbox
     setTasks(prev => prev.map(t => (t.groupId === groupId ? { ...t, groupId: 'inbox' } : t)));
     setTaskGroups(prev => prev.filter(g => g.id !== groupId));
+  };
+
+  const reorderTaskGroup = (groupId, direction) => {
+    setTaskGroups(prev => {
+      const sorted = [...prev].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      const idx = sorted.findIndex(g => g.id === groupId);
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= sorted.length) return prev;
+      const reindexed = {};
+      sorted.forEach((g, i) => { reindexed[g.id] = i + 1; });
+      const targetId = sorted[swapIdx].id;
+      const temp = reindexed[groupId];
+      reindexed[groupId] = reindexed[targetId];
+      reindexed[targetId] = temp;
+      return prev.map(g => reindexed[g.id] !== undefined ? { ...g, sortOrder: reindexed[g.id] } : g);
+    });
   };
 
   const createGroup = (clientX, clientY) => {
@@ -4322,9 +4352,9 @@ export default function WorkflowApp() {
                   <MapPin className="w-3.5 h-3.5" /> Pins
                 </button>
                 <button
-                  onClick={() => setShowTaskPanel(!showTaskPanel)}
+                  onClick={() => setTaskPanelMode(prev => prev === 'closed' ? 'panel' : 'closed')}
                   title="Tasks (T)"
-                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showTaskPanel ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${taskPanelMode !== 'closed' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
                 >
                   <ListTodo className="w-3.5 h-3.5" /> Tasks
                 </button>
@@ -5583,12 +5613,12 @@ export default function WorkflowApp() {
           />
         )}
 
-        {/* --- Full Task Manager (fullscreen overlay) --- */}
-        {showTaskPanel && (
+        {/* --- Full Task Manager (side panel / fullscreen) --- */}
+        {taskPanelMode !== 'closed' && (
           <FullTaskManager
             tasks={tasks}
-            showPanel={showTaskPanel}
-            onClose={() => setShowTaskPanel(false)}
+            showPanel={true}
+            onClose={() => setTaskPanelMode('closed')}
             onAddTask={addTask}
             onUpdateTask={updateTask}
             onDeleteTask={deleteTask}
@@ -5604,6 +5634,8 @@ export default function WorkflowApp() {
             onRenameGroup={renameTaskGroup}
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroupColor={updateTaskGroupColor}
+            onReorderGroup={reorderTaskGroup}
+            mode={taskPanelMode}
           />
         )}
 
