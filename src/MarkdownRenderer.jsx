@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 
-const PREVIEW_LINES = 3;
+
 
 // Extracted to module scope so react-markdown receives a stable reference
 const markdownComponents = {
@@ -79,13 +79,10 @@ const MarkdownRenderer = React.memo(({ content, isZoomedIn }) => {
   if (!content) return null;
 
   if (!isZoomedIn) {
-    // Lightweight plain-text preview (first ~3 lines, truncated)
-    const lines = content.split('\n').filter(l => l.trim() !== '').slice(0, PREVIEW_LINES);
-    const preview = lines.join('\n');
-    const isTruncated = content.split('\n').filter(l => l.trim() !== '').length > PREVIEW_LINES;
+    // Plain text preview — full content without markdown formatting, same card size
     return (
-      <div className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap line-clamp-3">
-        {preview}{isTruncated ? '...' : ''}
+      <div className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap break-words">
+        {content}
       </div>
     );
   }
