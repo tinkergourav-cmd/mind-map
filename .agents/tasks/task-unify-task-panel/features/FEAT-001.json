@@ -25,5 +25,5 @@
     "Run 'cd /projects/sandbox/mind-map && npm run build' and confirm it exits with code 0 and produces dist/ output"
   ],
   "blocked_reason": null,
-  "findings": "Build succeeds. FullTaskManager now supports both modes via a single mode prop. In panel mode, it renders as a 480px side panel with responsive layout. The notes column is hidden in panel mode to save space, but notes are still fully accessible via row selection and edit mode. All CRUD, filters, groups, reordering, and location features work identically in both modes."
+  "findings": "Successfully implemented. The FullTaskManager now accepts mode='panel' which switches to a side-panel layout: 480px wide, border-left, flex-col container. Toolbar wraps, form stacks vertically, table uses flexible title column. Post-review fixes applied: removed viewMode==='canvas' guard so task panel works in all views (matching previous overlay behavior), and restored notes column in panel mode with w-24 width and 30-char truncation."
 }
