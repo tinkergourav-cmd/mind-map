@@ -27,6 +27,8 @@ function stripMarkdownSyntax(text) {
   result = result.replace(/`([^`]*)`/g, '$1');
   // Remove list markers (- * + at start of lines)
   result = result.replace(/^\s*[-*+]\s+/gm, '');
+  // Remove ordered list markers (1. 2. etc.)
+  result = result.replace(/^\s*\d+\.\s+/gm, '');
   // Remove blockquote markers
   result = result.replace(/^\s*>\s?/gm, '');
   return result;
@@ -109,15 +111,18 @@ const MarkdownRenderer = React.memo(({ content, isZoomedIn }) => {
 
   if (!isZoomedIn) {
     // Lightweight plain-text preview (first ~3 lines, stripped of markdown syntax)
-    const lines = content.split('\n').filter(l => l.trim() !== '').slice(0, PREVIEW_LINES);
+    const allLines = content.split('\n')
+      .filter(l => l.trim() !== '')
+      .filter(l => !/^\s*```/.test(l));
+    const lines = allLines.slice(0, PREVIEW_LINES);
     const preview = lines.map(line => stripMarkdownSyntax(line)).join('\n');
-    const isTruncated = content.split('\n').filter(l => l.trim() !== '').length > PREVIEW_LINES;
+    const isTruncated = allLines.length > PREVIEW_LINES;
     return (
       <div>
         <div className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap line-clamp-3">
           {preview}{isTruncated ? '...' : ''}
         </div>
-        <div className="text-[10px] text-slate-400 italic mt-1">zoom in to read</div>
+        {isTruncated && <div className="text-[10px] text-slate-400 italic mt-1">zoom in to read</div>}
       </div>
     );
   }
