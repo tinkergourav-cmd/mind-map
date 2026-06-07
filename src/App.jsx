@@ -3727,20 +3727,7 @@ export default function WorkflowApp() {
   };
 
 
-  const renderLinks = (text) => {
-    if (!text) return null;
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return String(text).split(urlRegex).map((part, i) => {
-      if (part.match(urlRegex)) {
-        return (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline cursor-pointer" onClick={(e) => e.stopPropagation()}>
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
-  };
+
 
   const HEADER_CENTER_Y = 24;
 
@@ -4884,7 +4871,7 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar whitespace-pre-wrap ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar ${editMode ? 'cursor-text' : 'cursor-default'}`}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
