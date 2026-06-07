@@ -698,10 +698,14 @@ export default function WorkflowApp() {
             const loadedTasks = activeProj.tasks || [];
             setTasks(normalizeTasks(loadedTasks));
             const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
-            setTaskGroups(loadedTaskGroups.map((g, i) => ({
+            const groupsWithColor = loadedTaskGroups.map((g, i) => ({
               ...g,
               color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
-            })));
+            }));
+            if (!groupsWithColor.find(g => g.id === 'inbox')) {
+              groupsWithColor.unshift({ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' });
+            }
+            setTaskGroups(groupsWithColor);
             
             // Show workspace-open reminder after a short delay
             setTimeout(() => {

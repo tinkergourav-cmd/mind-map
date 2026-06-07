@@ -122,7 +122,13 @@ export default function TaskPanel({
 
   if (!showPanel) return null;
 
-  const groups = taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
+  const groups = (() => {
+    const raw = taskGroups && taskGroups.length > 0 ? taskGroups : [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+    if (!raw.find(g => g.id === 'inbox')) {
+      return [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }, ...raw];
+    }
+    return raw;
+  })();
 
   const getGroupName = (groupId) => {
     const group = groups.find(g => g.id === groupId);

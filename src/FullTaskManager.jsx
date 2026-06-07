@@ -138,7 +138,13 @@ export default function FullTaskManager({
 
   if (!showPanel) return null;
 
-  const groups = taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
+  const groups = (() => {
+    const raw = taskGroups && taskGroups.length > 0 ? taskGroups : [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+    if (!raw.find(g => g.id === 'inbox')) {
+      return [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }, ...raw];
+    }
+    return raw;
+  })();
 
   const toggleGroupCollapse = (groupId) => {
     setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -375,6 +381,13 @@ export default function FullTaskManager({
               className="flex-1 text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300"
               autoFocus
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTask(); if (e.key === 'Escape') setShowNewTaskForm(false); }}
+            />
+            <textarea
+              value={newNotes}
+              onChange={(e) => setNewNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              className="w-48 text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              rows={1}
             />
             <select
               value={newGroupId}
