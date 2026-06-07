@@ -5583,8 +5583,8 @@ export default function WorkflowApp() {
           />
         )}
 
-        {/* --- Full Task Manager (fullscreen overlay) --- */}
-        {showTaskPanel && (
+        {/* --- Full Task Manager (side panel) --- */}
+        {showTaskPanel && viewMode === 'canvas' && (
           <FullTaskManager
             tasks={tasks}
             showPanel={showTaskPanel}
@@ -5604,6 +5604,7 @@ export default function WorkflowApp() {
             onRenameGroup={renameTaskGroup}
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroupColor={updateTaskGroupColor}
+            mode="panel"
           />
         )}
 

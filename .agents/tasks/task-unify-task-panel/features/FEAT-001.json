@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Modify FullTaskManager to support both full-screen and side-panel rendering modes using a single 'mode' prop, then update App.jsx to render it as a side panel (like PinPanel) instead of a full-screen overlay.",
+  "status": "in_progress",
+  "steps": [
+    "In src/FullTaskManager.jsx, add a new prop 'mode' (default 'fullscreen') to the component's destructured props list (around line 68).",
+    "In src/FullTaskManager.jsx, change the root div (line 281) from 'fixed inset-0 z-50 bg-white flex flex-col' to conditionally apply styles based on mode: when mode='fullscreen' keep 'fixed inset-0 z-50 bg-white flex flex-col'; when mode='panel' use 'w-[480px] bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0 h-full' (similar to PinPanel's w-80 pattern but wider for the task manager).",
+    "In src/FullTaskManager.jsx, when mode='panel', make the toolbar more compact: wrap flex items to prevent overflow, hide or shrink the 'New group' input and filter buttons to fit the narrower width. Add responsive flex-wrap and hide elements that won't fit using conditional classes based on mode.",
+    "In src/FullTaskManager.jsx, when mode='panel', the new task form row should stack vertically instead of being all on one horizontal line (the current flex row won't fit in 480px). Adjust the form layout to be more vertical/compact.",
+    "In src/FullTaskManager.jsx, when mode='panel', reduce the fixed column widths in the task table rows. The full-screen uses w-24, w-[360px], w-10, w-20, w-24, w-40 which totals much more than 480px. For panel mode, make the task title column flexible (flex-1 min-w-0 instead of fixed w-[360px]), hide or collapse the notes column, and make other columns narrower.",
+    "In src/App.jsx, move the FullTaskManager rendering (currently at line 5587-5607 as a fullscreen overlay outside the flex layout) to be inside the flex-1 flex container alongside PinPanel/ReminderPanel (around line 5543-5582). Render it as a sibling to the canvas, passing mode='panel'. Keep the same props.",
+    "In src/App.jsx, change the rendering condition: instead of rendering FullTaskManager outside the normal flow as a fixed overlay, render it inline as a flex sibling (like PinPanel is rendered). The condition stays 'showTaskPanel && viewMode === 'canvas'' similar to PinPanel's pattern.",
+    "Verify the build succeeds with npm run build."
+  ],
+  "acceptance_criteria": [
+    "npm run build succeeds with no errors",
+    "FullTaskManager accepts a 'mode' prop with values 'fullscreen' or 'panel' (default 'fullscreen')",
+    "When mode='panel', the component renders as a side panel (480px wide, border-left, not fixed/overlay) that sits alongside the main canvas as a flex sibling",
+    "When mode='panel', the UI is still fully functional: all task CRUD, filters, groups, notes, status changes, reordering, location features work identically to full-screen mode",
+    "The toolbar, new task form, and task rows are responsive and fit within the panel width without horizontal overflow",
+    "In App.jsx the FullTaskManager is rendered inline in the flex layout (like PinPanel) with mode='panel', not as a fixed full-screen overlay"
+  ],
+  "verification": [
+    "Run 'cd /projects/sandbox/mind-map && npm run build' and confirm it exits with code 0 and produces dist/ output"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
