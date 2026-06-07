@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Refactor TaskPanel.jsx (sidebar) to separate viewing from editing: single click selects a task and shows a read-only notes preview beneath it, double click or Edit button opens edit mode. Increase sidebar width, reduce spacing for better information density.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In src/TaskPanel.jsx, change the top-level container width from 'w-80' (320px) to 'w-96' (384px) to give more horizontal room for task information.",
     "In the task display mode section (the non-editing branch of the task row rendering), ensure single click (handleTaskClick) only sets selectedTaskId without opening any edit form. The existing code already does this correctly.",
@@ -27,5 +27,5 @@
     "Run `npm run build` and confirm it completes successfully without errors."
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Implementation straightforward. All changes in src/TaskPanel.jsx. The notes preview is placed outside the display-mode div but inside the key={task.id} wrapper div, so it appears after the task row when selected. Build succeeds cleanly."
 }
