@@ -481,10 +481,10 @@ export default function FullTaskManager({
               {!isCollapsed && groupTasks.length > 0 && (
                 <div className="flex items-center px-4 py-1 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400 font-medium">
                   <span className="w-6 shrink-0">Status</span>
-                  <span className="flex-1 min-w-0">Task</span>
-                  <span className="w-16 shrink-0 text-center">Group</span>
-                  <span className="w-16 shrink-0 text-center">Priority</span>
-                  <span className="w-20 shrink-0 text-center">Due Date</span>
+                  <span className="shrink-0" style={{ width: '360px' }}>Task</span>
+                  <span className="w-14 shrink-0 text-center">Group</span>
+                  <span className="w-14 shrink-0 text-center">Priority</span>
+                  <span className="w-16 shrink-0 text-center">Due Date</span>
                   <span className="w-8 shrink-0 text-center">Loc</span>
                   <span className="w-20 shrink-0"></span>
                 </div>
@@ -523,7 +523,7 @@ export default function FullTaskManager({
                       </button>
 
                       {/* Title */}
-                      <div className="flex-1 min-w-0">
+                      <div className="shrink-0 min-w-0" style={{ width: '360px' }}>
                         {editingTitleTaskId === task.id ? (
                           <input
                             type="text"
@@ -546,23 +546,23 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Group badge */}
-                      <div className="w-16 shrink-0 text-center">
+                      <div className="w-14 shrink-0 text-center">
                         {taskGroup && taskGroup.id !== 'inbox' && (
-                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 truncate inline-block max-w-[56px]">
+                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 truncate inline-block max-w-[48px]">
                             {taskGroup.name}
                           </span>
                         )}
                       </div>
 
                       {/* Priority */}
-                      <div className="w-16 shrink-0 text-center">
+                      <div className="w-14 shrink-0 text-center">
                         <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${priorityCfg.badgeClass}`}>
                           {priorityCfg.label}
                         </span>
                       </div>
 
                       {/* Due Date */}
-                      <div className="w-20 shrink-0 text-center">
+                      <div className="w-16 shrink-0 text-center">
                         {task.dueDate && (
                           <span className={`text-[10px] ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-500'}`}>
                             {formatDueDate(task.dueDate)}
