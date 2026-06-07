@@ -44,8 +44,9 @@ const markdownComponents = {
   th: ({ children }) => <th className="border border-slate-300 px-1.5 py-0.5 text-left font-semibold">{children}</th>,
   td: ({ children }) => <td className="border border-slate-300 px-1.5 py-0.5">{children}</td>,
   code: ({ node, className, children }) => {
-    // In react-markdown v10, distinguish inline vs block by checking if parent is <pre>
-    const isBlock = node?.parent?.tagName === 'pre' || /language-(\w+)/.test(className || '');
+    const hasLanguage = /language-(\w+)/.test(className || '');
+    const isMultiline = typeof children === 'string' && children.includes('\n');
+    const isBlock = hasLanguage || isMultiline;
     if (!isBlock) {
       return <code className="bg-slate-100 px-1 rounded text-xs font-mono text-slate-700">{children}</code>;
     }

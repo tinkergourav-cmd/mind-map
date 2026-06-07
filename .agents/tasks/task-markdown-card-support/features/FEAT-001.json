@@ -1,0 +1,35 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Install react-markdown and add a MarkdownRenderer component with zoom-aware rendering. Replace the current renderLinks()-based content display with markdown rendering when cards are at readable zoom levels, and show lightweight text previews when zoomed out.",
+  "status": "completed",
+  "steps": [
+    "Install react-markdown as a dependency: `npm install react-markdown`",
+    "Create a new file src/MarkdownRenderer.jsx that exports a React component. This component accepts props: content (string), isZoomedIn (boolean). When isZoomedIn is true, render markdown using react-markdown with Tailwind-styled prose. When isZoomedIn is false, render a lightweight plain-text preview (first ~3 lines truncated with ellipsis, no formatting).",
+    "Style the markdown output inside MarkdownRenderer.jsx with Tailwind classes for: headings (h1-h6 with appropriate font sizes), bullet lists (ul/li with list-disc), numbered lists (ol/li with list-decimal), checklists (input checkboxes), tables (bordered, striped rows), code blocks (bg-slate-100 rounded, monospace font, overflow-x-auto), inline code (bg-slate-100 px-1 rounded), bold, italic, links (text-indigo-600 hover:underline), and blockquotes. Keep all text small (text-xs to text-sm scale) to fit inside cards.",
+    "In src/App.jsx, import the new MarkdownRenderer component at the top of the file.",
+    "In src/App.jsx, define a zoom threshold constant (e.g., const MARKDOWN_ZOOM_THRESHOLD = 0.6) near the top of the WorkflowApp component or before it.",
+    "In src/App.jsx around line 4870-4895, replace the content rendering in the canvas card view: Instead of the current block that shows `{renderLinks(node.content)}` when not editing, conditionally render: if editingTextNode === node.id, keep the existing textarea. Otherwise, render <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />. Keep the onClick handler to enter edit mode and the same wrapper div styling.",
+    "In src/App.jsx in the renderOutlineCard function (around line 3790-3815), the outline board also displays card content via a textarea for editing. Keep that textarea as-is (it is already an edit view). No change needed there since outline view is always an editing interface.",
+    "In src/App.jsx in the mobile sheet view (around line 5689-5740), add markdown rendering for the card content display if needed. Currently the mobile sheet only shows the title and action buttons, so no content change is needed here.",
+    "Add CSS styles to src/index.css for the markdown-rendered content: ensure proper spacing for nested lists, tables with borders, and code blocks with horizontal scroll. Use a .markdown-content class wrapper.",
+    "Ensure the textarea in edit mode preserves raw markdown text (no conversion). The user edits raw markdown and sees rendered output when not editing."
+  ],
+  "acceptance_criteria": [
+    "Running `npm run build` succeeds without errors",
+    "A new file src/MarkdownRenderer.jsx exists and exports a React component",
+    "The MarkdownRenderer component renders headings, lists, tables, code blocks, bold, italic, and links when isZoomedIn is true",
+    "The MarkdownRenderer shows a plain text preview (truncated, no formatting) when isZoomedIn is false",
+    "Card content on the canvas uses MarkdownRenderer instead of the old renderLinks() function",
+    "The textarea edit mode is preserved - users still edit raw markdown text",
+    "A zoom threshold constant controls when markdown rendering activates vs showing preview",
+    "No new card types are created - the existing universal card system is kept intact"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it completes successfully with no errors",
+    "Verify src/MarkdownRenderer.jsx exists and contains the component logic",
+    "Check that src/App.jsx imports and uses MarkdownRenderer in the card content area"
+  ],
+  "blocked_reason": null,
+  "findings": "Installed react-markdown (130 packages added). Build succeeds with no warnings. The MarkdownRenderer component handles both zoomed-in (full markdown) and zoomed-out (plain text preview) states. Post-review fixes applied: (1) Fixed inline code detection for react-markdown v10 using node.parent.tagName check instead of removed inline prop, (2) Removed whitespace-pre-wrap from parent div in App.jsx, (3) Extracted components object to module scope for stable reference, (4) Wrapped MarkdownRenderer in React.memo, (5) Removed dead renderLinks function from App.jsx. V2 review fix: Replaced broken node.parent.tagName check (hast nodes lack parent refs in react-markdown v10) with newline-based detection for bare fenced code blocks."
+}
