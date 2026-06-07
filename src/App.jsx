@@ -14,6 +14,7 @@ import PinPanel, { PIN_ICONS } from './PinPanel';
 import ReminderPanel from './ReminderPanel';
 import FullTaskManager from './FullTaskManager';
 import { GROUP_COLORS } from './taskConstants';
+import MarkdownRenderer from './MarkdownRenderer';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -332,6 +333,7 @@ const DEFAULT_REMINDERS = [
   { id: 'r-8', title: 'Reset Your Mind', content: 'Feeling stuck? Take a moment to clear your thoughts before continuing.', icon: '\u{1F9E0}', enabled: true, frequency: 60, showOnWorkspaceOpen: false, randomMode: true, activeHours: null, lastShownAt: null, nextReminderAt: null, createdAt: Date.now() }
 ];
 
+const MARKDOWN_ZOOM_THRESHOLD = 0.6;
 
 export default function WorkflowApp() {
   // --- Core State ---
@@ -4885,7 +4887,7 @@ export default function WorkflowApp() {
                           className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar whitespace-pre-wrap ${editMode ? 'cursor-text' : 'cursor-default'}`}
                           title="Click to edit content"
                         >
-                          {renderLinks(node.content)}
+                          <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
                         </div>
                       )}
                     </div>
