@@ -25,5 +25,5 @@
     "Run 'cd /projects/sandbox/mind-map && npm run build' and confirm it exits with code 0 and produces dist/ output"
   ],
   "blocked_reason": null,
-  "findings": "Successfully implemented. The FullTaskManager now accepts mode='panel' which switches to a side-panel layout: 480px wide, border-left, flex-col container. Toolbar wraps, form stacks vertically, table uses flexible title column. Post-review fixes applied: removed viewMode==='canvas' guard so task panel works in all views (matching previous overlay behavior), and restored notes column in panel mode with w-24 width and 30-char truncation."
+  "findings": "Successfully implemented. The FullTaskManager now accepts mode='panel' which switches to a side-panel layout: 480px wide, border-left, flex-col container. Toolbar wraps, form stacks vertically, table uses flexible title column. Post-review fixes applied: removed viewMode==='canvas' guard so task panel works in all views (matching previous overlay behavior), and restored notes column in panel mode with w-24 width and 30-char truncation. Additional: Added T key double-press detection (single T toggles side panel, double T toggles fullscreen) using lastTKeyTimeRef with 300ms threshold. Replaced boolean showTaskPanel state with taskPanelMode tri-state ('closed'|'panel'|'fullscreen'). Dynamic mode prop now passed to FullTaskManager."
 }
