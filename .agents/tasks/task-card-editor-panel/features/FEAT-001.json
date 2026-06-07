@@ -4,13 +4,13 @@
   "description": "Create a CardEditorPanel side panel component and integrate it into App.jsx. The panel shows title and content editors for the currently selected card (when exactly one card is selected). It follows the same side panel pattern as PinPanel.jsx (w-80, border-l, bg-white). Changes in the panel immediately update the card on the canvas via updateNode.",
   "status": "completed",
   "steps": [
-    "Step 1: Create src/CardEditorPanel.jsx - a new side panel component. Props: selectedNode (the single selected node object or null), onUpdateNode (callback to update title/content), onClose (callback to close the panel). Structure: (a) If no selectedNode, show an empty state message like 'Select a single card to edit'. (b) If selectedNode exists, show: a header with a Pencil icon, the card title text, and an X close button; an input/textarea for editing the title; a large textarea for editing the content (with generous height like min-h-[200px]); and below the textarea, a markdown preview section using the existing MarkdownRenderer component (always rendered with isZoomedIn=true for full markdown rendering). Style it exactly like PinPanel - w-80 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0. Use Tailwind classes consistent with the project. Import Pencil and X from lucide-react.",
-    "Step 2: In src/App.jsx, add state: const [showCardEditorPanel, setShowCardEditorPanel] = useState(false); (add near line 403 where other panel states are defined).",
-    "Step 3: In src/App.jsx, add the import for CardEditorPanel at the top imports section (near line 16 where PinPanel is imported): import CardEditorPanel from './CardEditorPanel';",
-    "Step 4: In src/App.jsx, compute the selected node for the panel. Add a derived value: const cardEditorNode = (selectedNodeIds.length === 1) ? nodes.find(n => n.id === selectedNodeIds[0]) : null; (place this near line 1013 where nodes/edges/groups are derived from activeWs).",
-    "Step 5: In src/App.jsx, render the CardEditorPanel in the JSX after the PinPanel section (around line 5580). Use the same conditional pattern: {showCardEditorPanel && viewMode === 'canvas' && (<CardEditorPanel selectedNode={cardEditorNode} onUpdateNode={(updates) => { if (cardEditorNode) { takeSnapshot(); updateNode(cardEditorNode.id, updates); } }} onClose={() => setShowCardEditorPanel(false)} />)}",
-    "Step 6: In src/App.jsx, add a toggle button in the sidebar panel buttons section (around line 4353, after the Reminders button). Pattern: <button onClick={() => setShowCardEditorPanel(!showCardEditorPanel)} title='Card Editor (E)' className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showCardEditorPanel ? 'bg-cyan-100 text-cyan-700 border border-cyan-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}><Pencil className='w-3.5 h-3.5' /> Card Editor</button>",
-    "Step 7: Ensure that the CardEditorPanel component handles the case where selectedNode transitions from a node to null gracefully (user deselects), and where selectedNodeIds has multiple entries (show empty state). The panel should only show editor fields when exactly one card is selected."
+    "Step 1: Create src/CardEditorPanel.jsx - a new side panel component.",
+    "Step 2: In src/App.jsx, add state: showCardEditorPanel.",
+    "Step 3: In src/App.jsx, add the import for CardEditorPanel.",
+    "Step 4: In src/App.jsx, compute cardEditorNode derived value.",
+    "Step 5: In src/App.jsx, render the CardEditorPanel in the JSX.",
+    "Step 6: In src/App.jsx, add a toggle button in the sidebar.",
+    "Step 7: Handle graceful transitions between selection states."
   ],
   "acceptance_criteria": [
     "A new file src/CardEditorPanel.jsx exists with a functional React component",
@@ -28,5 +28,5 @@
     "Grep for 'CardEditorPanel' in App.jsx to confirm it is imported and rendered"
   ],
   "blocked_reason": null,
-  "findings": "Implementation completed successfully. Build passes with no errors. CardEditorPanel uses controlled inputs synced via useEffect on selectedNode changes. The takeSnapshot() call is made on every edit to support undo/redo."
+  "findings": "All steps completed successfully. Build passes. Panel created with title editor, content textarea (min-h-[200px]), and live markdown preview. Toggle button added to sidebar with cyan color scheme. Post-review fixes applied: (1) moved takeSnapshot from onUpdateNode to onFocus handlers matching canvas pattern, (2) changed useEffect deps to [selectedNode?.id] only so local state is authoritative during editing."
 }
