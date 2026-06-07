@@ -1,0 +1,21 @@
+{
+  "project_type": "React + Vite + Tailwind CSS mind-map application (ThoughtFlow)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite with npm",
+  "test_framework": "None (no test files exist)",
+  "build_command": "cd /projects/sandbox/mind-map && npm run build",
+  "test_command": "No tests - use npm run build for verification",
+  "verification_instructions": "1. Run npm run build to verify no compilation errors. 2. Verify TaskPanel.jsx file exists and exports properly. 3. Verify App.jsx imports and renders TaskPanel correctly.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "OPEN_INTERNET - full network access available. Node.js v22 via nvm.",
+  "contribution_requirements": "No CONTRIBUTING.md found. Follow existing code patterns.",
+  "key_patterns": "- Panels (PinPanel, ReminderPanel) are separate component files in src/ imported by App.jsx. - Panels render as siblings to the canvas in a flex row, conditionally shown via showXPanel state. - State is managed via useState in App.jsx with workspaces array containing all data. - Persistence: useEffect at line 841 syncs [workspaces, activeTab, nextId, reminders] to the projects state, which auto-saves to localStorage via debounced timer. Tasks must be added to this dependency array. - Pin data structure: {id, name, canvas_position_x, canvas_position_y, note, color, icon, visibility_status, created_date}. Pins live in workspace.pins[]. - Export/Import: exportData() exports {workspaces, activeTab, nextId}. exportAllData() exports all projects. importAllData() restores from backup. - Panel toggle buttons are in the left sidebar around line 4113. - Panels render after the canvas around line 5331. - updateActiveWorkspace(updater) applies changes to the active workspace. - Icons use lucide-react. - Tailwind CSS for all styling. - No drag-and-drop library installed - use Move Up/Move Down buttons.",
+  "relevant_files": [
+    "src/App.jsx",
+    "src/PinPanel.jsx",
+    "src/ReminderPanel.jsx",
+    "src/TaskPanel.jsx (to be created)"
+  ],
+  "directory_structure": "src/ contains App.jsx (5680 lines, monolithic main component), MiniMap.jsx, PinPanel.jsx, ReminderPanel.jsx, main.jsx, index.css. public/ has static assets. Config files at root."
+}

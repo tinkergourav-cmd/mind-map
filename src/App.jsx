@@ -7,11 +7,14 @@ import {
   Copy, ArrowUp, ArrowDown, RefreshCw, LayoutList, MonitorSpeaker,
   MoreVertical, ImageIcon, ChevronUp, Scissors, ClipboardPaste,
   Lock, Shield, Eye, EyeOff, GitBranch, Map, Timer,
-  MapPin, Bell, Pencil, MousePointer
+  MapPin, Bell, Pencil, MousePointer, ListTodo
 } from 'lucide-react';
 import MiniMap from './MiniMap';
 import PinPanel, { PIN_ICONS } from './PinPanel';
 import ReminderPanel from './ReminderPanel';
+import TaskPanel from './TaskPanel';
+import FullTaskManager from './FullTaskManager';
+import { GROUP_COLORS } from './taskConstants';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -425,6 +428,14 @@ export default function WorkflowApp() {
   const timerIntervalRef = useRef(null);
   const timerNotificationTimerRef = useRef(null);
 
+  // --- Task System States ---
+  const [tasks, setTasks] = useState([]);
+  const [taskGroups, setTaskGroups] = useState([{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }]);
+  const [showTaskPanel, setShowTaskPanel] = useState(false);
+  const [taskViewMode, setTaskViewMode] = useState('sidebar');
+  const [isSelectingTaskLocation, setIsSelectingTaskLocation] = useState(false);
+  const [selectingLocationForTaskId, setSelectingLocationForTaskId] = useState(null);
+
   // --- Multi-Selection States ---
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
   const [selectionBox, setSelectionBox] = useState(null);
@@ -682,6 +693,15 @@ export default function WorkflowApp() {
             // Load reminder data
             const loadedReminders = activeProj.reminders || DEFAULT_REMINDERS;
             setReminders(loadedReminders);
+
+            // Load task data
+            const loadedTasks = activeProj.tasks || [];
+            setTasks(normalizeTasks(loadedTasks));
+            const loadedTaskGroups = activeProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+            setTaskGroups(loadedTaskGroups.map((g, i) => ({
+              ...g,
+              color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+            })));
             
             // Show workspace-open reminder after a short delay
             setTimeout(() => {
@@ -846,7 +866,7 @@ export default function WorkflowApp() {
           const now = Date.now();
           const lastMod = p.lastModified || 0;
           const shouldUpdateTime = (now - lastMod) > 60000;
-          return { ...p, workspaces, activeTab, nextId, reminders, ...(shouldUpdateTime ? { lastModified: now } : {}) };
+          return { ...p, workspaces, activeTab, nextId, reminders, tasks, taskGroups, ...(shouldUpdateTime ? { lastModified: now } : {}) };
         });
         return updated;
       });
@@ -858,7 +878,7 @@ export default function WorkflowApp() {
       }, 500);
       localStorage.setItem('nexus-active-project', activeProjectId);
     }
-  }, [workspaces, activeTab, nextId, reminders, initialized, activeProjectId]);
+  }, [workspaces, activeTab, nextId, reminders, tasks, taskGroups, initialized, activeProjectId]);
 
   useEffect(() => {
     if (initialized && activeProjectId) {
@@ -1394,6 +1414,20 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleReminderKey);
   }, []);
 
+  // --- T key toggles task panel ---
+  useEffect(() => {
+    const handleTaskKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        setShowTaskPanel(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleTaskKey);
+    return () => window.removeEventListener('keydown', handleTaskKey);
+  }, []);
+
   // --- F key toggles timer panel ---
   useEffect(() => {
     const handleTimerKey = (e) => {
@@ -1725,7 +1759,7 @@ export default function WorkflowApp() {
     // Save current project state
     setProjects(prev => {
       const updated = prev.map(p => p.id === activeProjectId
-        ? { ...p, workspaces, activeTab, nextId }
+        ? { ...p, workspaces, activeTab, nextId, tasks, taskGroups }
         : p
       );
       localStorage.setItem('nexus-app-state', JSON.stringify(updated));
@@ -1743,6 +1777,12 @@ export default function WorkflowApp() {
     setActiveTab(target.activeTab || (targetWorkspaces.length > 0 ? targetWorkspaces[0].id : ''));
     setNextId(target.nextId || 10);
     setReminders(target.reminders || DEFAULT_REMINDERS);
+    setTasks(normalizeTasks(target.tasks || []));
+    const switchedTaskGroups = target.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+    setTaskGroups(switchedTaskGroups.map((g, i) => ({
+      ...g,
+      color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+    })));
     setStoredPassword(target.password || '');
     setPasswordEnabled(!!target.password);
     setIsAuthenticated(true);
@@ -2038,7 +2078,7 @@ export default function WorkflowApp() {
 
   // --- Import / Export ---
   const exportData = () => {
-    const data = { workspaces, activeTab, nextId };
+    const data = { workspaces, activeTab, nextId, tasks, taskGroups };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2121,6 +2161,11 @@ export default function WorkflowApp() {
           setWorkspaces(importedData.workspaces);
           setActiveTab(importedData.activeTab || importedData.workspaces[0]?.id || '');
           setNextId(importedData.nextId || 10);
+          if (importedData.tasks) setTasks(normalizeTasks(importedData.tasks));
+          if (importedData.taskGroups) setTaskGroups(importedData.taskGroups.map((g, i) => ({
+            ...g,
+            color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+          })));
         } else {
           setErrorMessage("Invalid workflow file format.");
         }
@@ -2174,6 +2219,12 @@ export default function WorkflowApp() {
               setWorkspaces(defaultProj.workspaces || []);
               setActiveTab(defaultProj.activeTab || defaultProj.workspaces?.[0]?.id || '');
               setNextId(defaultProj.nextId || 10);
+              setTasks(normalizeTasks(defaultProj.tasks || []));
+              const restoredTaskGroups = defaultProj.taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+              setTaskGroups(restoredTaskGroups.map((g, i) => ({
+                ...g,
+                color: g.color || GROUP_COLORS[i % GROUP_COLORS.length].id,
+              })));
             }
           } catch (restoreErr) {
             // Rollback to previous state
@@ -2456,6 +2507,36 @@ export default function WorkflowApp() {
   // --- Pointer Interactions (Pan, Drag & Resize) ---
   const handlePointerDownMain = (e) => {
     if (e.button !== 0) return;
+
+    if (isSelectingTaskLocation) {
+      const rect = workspaceRef.current.getBoundingClientRect();
+      const canvasX = (e.clientX - rect.left - transform.x) / transform.scale;
+      const canvasY = (e.clientY - rect.top - transform.y) / transform.scale;
+
+      const pinId = `pin-task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const newPin = {
+        id: pinId,
+        name: 'Task Location',
+        canvas_position_x: canvasX,
+        canvas_position_y: canvasY,
+        note: '',
+        color: '#6366f1',
+        icon: '\ud83c\udfaf',
+        visibility_status: true,
+        created_date: new Date().toISOString(),
+      };
+      updateActiveWorkspace(ws => ({
+        pins: [...(ws.pins || []), newPin],
+      }));
+
+      setTasks(prev => prev.map(t => t.id === selectingLocationForTaskId ? { ...t, locationPinId: pinId, locationWorkspaceId: activeTab } : t));
+
+      setIsSelectingTaskLocation(false);
+      setSelectingLocationForTaskId(null);
+      setShowTaskPanel(true);
+      showToast('Task location set');
+      return;
+    }
     
     setOpenColorPicker(null);
     setOpenLinkPicker(null);
@@ -2988,6 +3069,128 @@ export default function WorkflowApp() {
     }));
     setFocusedPinId(pinId);
     setTimeout(() => setFocusedPinId(null), 2000);
+  };
+
+  // --- Task System Functions ---
+  const normalizeTasks = (taskList) => {
+    return taskList.map((t, i) => ({
+      ...t,
+      groupId: t.groupId || 'inbox',
+      sortOrder: t.sortOrder || (i + 1),
+    }));
+  };
+
+  const getTaskSection = (task) => {
+    if (task.status === 'completed') return 'completed';
+    if (!task.dueDate) return 'noDueDate';
+    const today = new Date().toISOString().split('T')[0];
+    if (task.dueDate <= today) return 'today';
+    return 'upcoming';
+  };
+
+  const addTask = (taskData) => {
+    const newId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setTasks(prev => {
+      const newTask = {
+        id: newId,
+        createdAt: new Date().toISOString(),
+        status: 'todo',
+        sortOrder: Math.max(0, ...prev.map(t => (t.sortOrder || 0))) + 1,
+        ...taskData,
+      };
+      return [...prev, newTask];
+    });
+    return newId;
+  };
+
+  const updateTask = (taskId, updates) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+  };
+
+  const deleteTask = (taskId) => {
+    setTasks(prev => {
+      const task = prev.find(t => t.id === taskId);
+      if (task && task.locationPinId) {
+        // Remove the orphaned pin from all workspaces
+        setWorkspaces(wsArr => wsArr.map(ws => ({
+          ...ws,
+          pins: (ws.pins || []).filter(p => p.id !== task.locationPinId),
+        })));
+      }
+      return prev.filter(t => t.id !== taskId);
+    });
+  };
+
+  const reorderTask = (taskId, direction, partitionBy = 'section') => {
+    setTasks(prev => {
+      const task = prev.find(t => t.id === taskId);
+      if (!task) return prev;
+      let peerTasks;
+      if (partitionBy === 'group') {
+        const groupKey = task.groupId || 'inbox';
+        peerTasks = prev.filter(t => (t.groupId || 'inbox') === groupKey).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      } else {
+        const section = getTaskSection(task);
+        peerTasks = prev.filter(t => getTaskSection(t) === section).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
+      const idx = peerTasks.findIndex(t => t.id === taskId);
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= peerTasks.length) return prev;
+      // Re-index peer tasks with sequential sortOrder to ensure unique values
+      const reindexed = {};
+      peerTasks.forEach((t, i) => { reindexed[t.id] = i + 1; });
+      // Swap the two positions
+      const targetId = peerTasks[swapIdx].id;
+      const temp = reindexed[taskId];
+      reindexed[taskId] = reindexed[targetId];
+      reindexed[targetId] = temp;
+      return prev.map(t => reindexed[t.id] !== undefined ? { ...t, sortOrder: reindexed[t.id] } : t);
+    });
+  };
+
+  const startLocationSelection = (taskId) => {
+    setIsSelectingTaskLocation(true);
+    setSelectingLocationForTaskId(taskId);
+    setShowTaskPanel(false);
+  };
+
+  const cancelLocationSelection = () => {
+    setIsSelectingTaskLocation(false);
+    setSelectingLocationForTaskId(null);
+    setShowTaskPanel(true);
+  };
+
+  const navigateToTaskLocation = (pinId, workspaceId) => {
+    navigateToPin(pinId, workspaceId);
+  };
+
+  // --- Task Group CRUD ---
+  const addTaskGroup = (name, color) => {
+    setTaskGroups(prev => {
+      const assignedColor = color || GROUP_COLORS[prev.length % GROUP_COLORS.length].id;
+      const newGroup = {
+        id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name,
+        sortOrder: Math.max(0, ...prev.map(g => (g.sortOrder || 0))) + 1,
+        color: assignedColor,
+      };
+      return [...prev, newGroup];
+    });
+  };
+
+  const renameTaskGroup = (groupId, newName) => {
+    setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: newName } : g));
+  };
+
+  const updateTaskGroupColor = (groupId, color) => {
+    setTaskGroups(prev => prev.map(g => g.id === groupId ? { ...g, color } : g));
+  };
+
+  const deleteTaskGroup = (groupId) => {
+    if (groupId === 'inbox') return;
+    // Move tasks from deleted group to inbox
+    setTasks(prev => prev.map(t => (t.groupId === groupId ? { ...t, groupId: 'inbox' } : t)));
+    setTaskGroups(prev => prev.filter(g => g.id !== groupId));
   };
 
   const createGroup = (clientX, clientY) => {
@@ -4115,6 +4318,13 @@ export default function WorkflowApp() {
                   className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showPinPanel ? 'bg-rose-100 text-rose-700 border border-rose-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
                 >
                   <MapPin className="w-3.5 h-3.5" /> Pins
+                </button>
+                <button
+                  onClick={() => setShowTaskPanel(!showTaskPanel)}
+                  title="Tasks (T)"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showTaskPanel ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                >
+                  <ListTodo className="w-3.5 h-3.5" /> Tasks
                 </button>
                 <button
                   onClick={() => setShowReminderPanel(!showReminderPanel)}
@@ -5368,6 +5578,56 @@ export default function WorkflowApp() {
             }}
             onEnableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: true, nextReminderAt: Date.now() + r.frequency * 60000 }))); }}
             onDisableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: false, nextReminderAt: null }))); }}
+          />
+        )}
+
+        {/* --- Task Panel --- */}
+        {showTaskPanel && viewMode === 'canvas' && taskViewMode === 'sidebar' && (
+          <TaskPanel
+            tasks={tasks}
+            showPanel={showTaskPanel}
+            onClose={() => setShowTaskPanel(false)}
+            onAddTask={addTask}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
+            onReorderTask={reorderTask}
+            onStartLocationSelection={startLocationSelection}
+            onNavigateToLocation={navigateToTaskLocation}
+            onCancelLocationSelection={cancelLocationSelection}
+            isSelectingLocation={isSelectingTaskLocation}
+            selectingLocationForTaskId={selectingLocationForTaskId}
+            workspaces={workspaces}
+            taskGroups={taskGroups}
+            onAddGroup={addTaskGroup}
+            onRenameGroup={renameTaskGroup}
+            onDeleteGroup={deleteTaskGroup}
+            onUpdateGroupColor={updateTaskGroupColor}
+            onExpandToFullscreen={() => setTaskViewMode('fullscreen')}
+          />
+        )}
+
+        {/* --- Full Task Manager (fullscreen overlay) --- */}
+        {showTaskPanel && taskViewMode === 'fullscreen' && (
+          <FullTaskManager
+            tasks={tasks}
+            showPanel={showTaskPanel}
+            onClose={() => { setShowTaskPanel(false); setTaskViewMode('sidebar'); }}
+            onAddTask={addTask}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
+            onReorderTask={reorderTask}
+            onStartLocationSelection={startLocationSelection}
+            onNavigateToLocation={navigateToTaskLocation}
+            onCancelLocationSelection={cancelLocationSelection}
+            isSelectingLocation={isSelectingTaskLocation}
+            selectingLocationForTaskId={selectingLocationForTaskId}
+            workspaces={workspaces}
+            taskGroups={taskGroups}
+            onAddGroup={addTaskGroup}
+            onRenameGroup={renameTaskGroup}
+            onDeleteGroup={deleteTaskGroup}
+            onUpdateGroupColor={updateTaskGroupColor}
+            onSwitchToSidebar={() => setTaskViewMode('sidebar')}
           />
         )}
 
