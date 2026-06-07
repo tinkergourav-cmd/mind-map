@@ -4762,7 +4762,7 @@ export default function WorkflowApp() {
                     left: displayX, 
                     top: displayY, 
                     width: nodeDims.width,
-                    ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height, overflow: 'hidden' } : {}),
+                    ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height, overflowX: 'hidden', overflowY: 'visible' } : {}),
                     backgroundColor: theme.cardBg || '#bfdbfe',
                     padding: 12,
                     ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
@@ -4864,7 +4864,7 @@ export default function WorkflowApp() {
 
                   {/* Content */}
                   {(node.content || editingTextNode === node.id) ? (
-                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}>
+                    <div className="mt-2 flex-1 min-h-0" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}>
                       {editingTextNode === node.id ? (
                         <textarea 
                           autoFocus
