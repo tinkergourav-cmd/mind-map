@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Implement card maximum dimensions, internal scrolling, stable sizing during edit transitions, Shift+Wheel card scrolling, zoom-out dimension stability, and optional resize handle",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Add card dimension constants: In src/App.jsx, near the existing MARKDOWN_ZOOM_THRESHOLD constant (around line 320), add constants for maximum card dimensions. Use values roughly proportional to an A4 page: MAX_CARD_WIDTH = 480 (pixels), MAX_CARD_HEIGHT = 600 (pixels), MIN_CARD_WIDTH = 180, MIN_CARD_HEIGHT = 80.",
     "Step 2 - Refactor getNodeDimensions to also compute height: Modify the `getNodeDimensions` function (lines 506-520 of App.jsx) to compute both width and height based on content. The width calculation should stay as-is (180-380 range based on content length). Add a height calculation: estimate based on content lines (each line ~18px for text + padding). Use min-height of MIN_CARD_HEIGHT and cap at MAX_CARD_HEIGHT. Return { width, height, hasOverflow } where hasOverflow is true when natural content height exceeds MAX_CARD_HEIGHT. Also respect node.customWidth and node.customHeight if they are set (for the resize handle feature).",
@@ -32,5 +32,5 @@
     "Confirm the handleWheel function has the Shift+key check for card scrolling bypass"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All changes build successfully. The implementation adds card dimension constraints (MAX_CARD_WIDTH=480, MAX_CARD_HEIGHT=600), internal scrolling via card-scroll-area class, Shift+Wheel bypass in handleWheel, stable sizing between edit/display modes, and a resize handle that persists customWidth/customHeight to node data. The max card width was expanded from the previous 380px cap to 480px. Custom scrollbar styles are defined in index.css with thin subtle appearance on hover."
 }
