@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Refactor FullTaskManager.jsx (full-screen view) to separate viewing from editing: single click selects a task and shows only a notes preview (no edit form), double click or Edit button opens full edit mode. Tighten layout to reduce empty horizontal space and bring actions closer to task info.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In src/FullTaskManager.jsx, add a new state variable `selectedTaskId` (separate from `expandedTaskId`) for tracking which task is selected for notes preview.",
     "Add a new state variable `editingTaskId` to track which task is in full edit mode (currently this role is served by `expandedTaskId`).",
@@ -29,5 +29,5 @@
     "Run `npm run build` and confirm it completes successfully without errors."
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Implementation complete. Replaced expandedTaskId with selectedTaskId + editingTaskId pattern. Single click now shows notes preview only, double click or Edit button opens full edit panel. Tightened column widths and added Group badge column. Build succeeds cleanly."
 }
