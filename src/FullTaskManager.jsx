@@ -524,7 +524,7 @@ export default function FullTaskManager({
                   <span className="w-10 shrink-0 text-center">Loc</span>
                   <span className={`${isPanel ? 'w-16' : 'w-20'} shrink-0 text-center`}>Actions</span>
                   <span className={`${isPanel ? 'w-20' : 'w-24'} shrink-0 text-center`}>Group</span>
-                  {!isPanel && <span className="w-40 shrink-0">Notes</span>}
+                  <span className={`${isPanel ? 'w-24' : 'w-40'} shrink-0`}>Notes</span>
                 </div>
               )}
 
@@ -689,15 +689,16 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Notes preview (small, inline in row) */}
-                      {!isPanel && (
-                      <div className="w-40 shrink-0">
+                      <div className={`${isPanel ? 'w-24' : 'w-40'} shrink-0`}>
                         {task.notes && task.notes.trim() && (
                           <span className="text-[10px] text-slate-400 truncate block">
-                            {task.notes.substring(0, 60)}{task.notes.length > 60 ? '...' : ''}
+                            {isPanel
+                              ? <>{task.notes.substring(0, 30)}{task.notes.length > 30 ? '...' : ''}</>
+                              : <>{task.notes.substring(0, 60)}{task.notes.length > 60 ? '...' : ''}</>
+                            }
                           </span>
                         )}
                       </div>
-                      )}
                     </div>
 
                     {/* Selected: full notes (read-only, no truncation) */}

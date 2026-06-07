@@ -5584,7 +5584,7 @@ export default function WorkflowApp() {
         )}
 
         {/* --- Full Task Manager (side panel) --- */}
-        {showTaskPanel && viewMode === 'canvas' && (
+        {showTaskPanel && (
           <FullTaskManager
             tasks={tasks}
             showPanel={showTaskPanel}
