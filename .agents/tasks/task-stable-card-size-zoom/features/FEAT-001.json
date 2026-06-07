@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Make card dimensions stable and fixed regardless of zoom level. Replace the dynamic content-based dimension calculation with a fixed card size approach where cards have a consistent width and a fixed maximum height, using overflow scrolling for content that exceeds boundaries.",
+  "status": "completed",
+  "steps": [
+    "In src/App.jsx, modify the getNodeDimensions() function (line ~510) to return a FIXED width (e.g., 280px) and FIXED height (e.g., 180px) for all cards, regardless of content length. Remove the dynamic character-count-based calculations that compute different widths/heights per card. The function should return the same dimensions for every card so that card sizes never change during zoom or content rendering.",
+    "Update the card rendering section (line ~4762 where the card div style is set) to apply fixed width and height from getNodeDimensions(), and add overflow:hidden on the card wrapper. The content area inside should use overflow-y:auto with the custom-scrollbar class so users can scroll through long content.",
+    "Update the content display div (around line 4875-4885) to remove the conditional maxHeight logic that depends on nodeDims.height >= MAX_CARD_HEIGHT. Instead, give the content area a fixed max-height within the card (e.g., the card height minus title area ~40px) and always apply overflow-y:auto with the custom-scrollbar class.",
+    "In the computeLayout function (line ~230), update the hardcoded node dimensions (nW=280, nH=180) to match the new fixed card dimensions from getNodeDimensions so group auto-sizing remains consistent.",
+    "In src/MiniMap.jsx, verify the NODE_EXPANDED_WIDTH=240 and NODE_EXPANDED_HEIGHT=120 constants still make sense with the new fixed card size. Adjust if needed for proper minimap rendering.",
+    "Ensure getConnectionPoint (line ~3739) still works correctly - it already calls getNodeDimensions(node) which will now return fixed values, so edge connection points will be stable."
+  ],
+  "acceptance_criteria": [
+    "All cards render with the same fixed width (280px) and fixed height (180px) regardless of content length",
+    "Zooming in and out does not change card dimensions - only the CSS transform scale changes",
+    "Long content is scrollable within the card boundaries via overflow-y:auto",
+    "Edge connection points remain stable during zoom because they use fixed dimensions",
+    "Group auto-layout correctly encompasses child cards with the fixed dimensions",
+    "npm run build succeeds without errors"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it succeeds with no errors",
+    "Grep for the getNodeDimensions function to confirm it returns fixed values"
+  ],
+  "blocked_reason": null,
+  "findings": "Build succeeds. Post-review cleanup applied: (1) Replaced getNodeDimensions useCallback with module-level NODE_DIMS constant, updated all call sites and dependency arrays. (2) Removed dead MAX_CARD_WIDTH/MAX_CARD_HEIGHT constants. (3) Content area now uses h-full (flex-based sizing) instead of hardcoded maxHeight:100px, adapting to actual available space. (4) Textarea editing mode now has overflow-y:auto for scroll feedback matching read-mode behavior."
+}
