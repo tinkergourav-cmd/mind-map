@@ -534,6 +534,26 @@ export default function WorkflowApp() {
   }, []);
 
   const handleWheel = useCallback((e) => {
+    // Shift + Wheel: scroll markdown card content if hovering over a scrollable card
+    if (e.shiftKey) {
+      let el = e.target;
+      while (el && el !== e.currentTarget) {
+        if (el.classList && el.classList.contains('markdown-card-scrollable')) {
+          // Only scroll if the element actually has overflow content
+          if (el.scrollHeight > el.clientHeight) {
+            e.preventDefault();
+            el.scrollTop += e.deltaY;
+            return;
+          }
+          break;
+        }
+        el = el.parentElement;
+      }
+      // If no scrollable card found or no overflow, do nothing (don't zoom)
+      e.preventDefault();
+      return;
+    }
+
     e.preventDefault();
     setEditingPinOnCanvas(null);
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
@@ -4877,7 +4897,7 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words ${nodeDims.height >= MAX_CARD_HEIGHT ? 'overflow-y-auto custom-scrollbar' : ''} ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words ${nodeDims.height >= MAX_CARD_HEIGHT ? 'overflow-y-auto custom-scrollbar markdown-card-scrollable' : ''} ${editMode ? 'cursor-text' : 'cursor-default'}`}
                           style={{ ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height - 80 } : {}), overflowWrap: 'break-word', wordBreak: 'break-word' }}
                           title="Click to edit content"
                         >
