@@ -2530,9 +2530,10 @@ export default function WorkflowApp() {
       const canvasY = (e.clientY - rect.top - transform.y) / transform.scale;
 
       const pinId = `pin-task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const taskForLocation = tasks.find(t => t.id === selectingLocationForTaskId);
       const newPin = {
         id: pinId,
-        name: 'Task Location',
+        name: taskForLocation?.title || 'Task Location',
         canvas_position_x: canvasX,
         canvas_position_y: canvasY,
         note: '',
