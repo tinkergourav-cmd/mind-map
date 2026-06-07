@@ -525,7 +525,7 @@ export default function FullTaskManager({
               {!isCollapsed && groupTasks.length > 0 && (
                 <div className="flex items-center px-4 py-1 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400 font-medium">
                   <span className="w-24 shrink-0">Status</span>
-                  <span className="flex-1 min-w-0">Task</span>
+                  <span className="w-[360px] shrink-0">Task</span>
                   <span className="w-10 shrink-0 text-center">Loc</span>
                   <span className="w-20 shrink-0 text-center">Actions</span>
                   <span className="w-24 shrink-0 text-center">Group</span>
@@ -593,7 +593,7 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Title */}
-                      <div className="flex-1 min-w-0">
+                      <div className="w-[360px] shrink-0">
                         {editingTitleTaskId === task.id ? (
                           <input
                             type="text"
@@ -609,6 +609,7 @@ export default function FullTaskManager({
                           <span
                             className={`text-xs truncate block ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-700'}`}
                             onDoubleClick={(e) => handleTitleDoubleClick(e, task)}
+                            title={task.title}
                           >
                             {task.title}
                           </span>
