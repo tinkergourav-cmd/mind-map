@@ -508,21 +508,7 @@ export default function WorkflowApp() {
 
   // --- Node Dimensions Helper ---
   const getNodeDimensions = useCallback((node) => {
-    const titleLen = (node.title || '').length;
-    const content = node.content || '';
-    const contentLen = content.length;
-    const newlineCount = (content.match(/\n/g) || []).length;
-    const totalLen = titleLen + contentLen;
-    let width = 180 + Math.min(200, totalLen * 1.2);
-    // Multi-line content needs more width to display properly
-    if (newlineCount > 0) {
-      width = Math.max(width, 220 + newlineCount * 20);
-    }
-    width = Math.max(180, Math.min(MAX_CARD_WIDTH, width));
-    // Height grows with content but caps at MAX_CARD_HEIGHT
-    let height = 60 + Math.min(740, contentLen * 0.3 + newlineCount * 18);
-    height = Math.max(60, Math.min(MAX_CARD_HEIGHT, height));
-    return { width, height };
+    return { width: 280, height: 180 };
   }, []);
 
   // --- Zoom Helpers ---
@@ -4762,7 +4748,8 @@ export default function WorkflowApp() {
                     left: displayX, 
                     top: displayY, 
                     width: nodeDims.width,
-                    ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height, overflow: 'hidden' } : {}),
+                    height: nodeDims.height,
+                    overflow: 'hidden',
                     backgroundColor: theme.cardBg || '#bfdbfe',
                     padding: 12,
                     ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
@@ -4877,8 +4864,8 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words ${nodeDims.height >= MAX_CARD_HEIGHT ? 'overflow-y-auto custom-scrollbar' : ''} ${editMode ? 'cursor-text' : 'cursor-default'}`}
-                          style={{ ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height - 80 } : {}), overflowWrap: 'break-word', wordBreak: 'break-word' }}
+                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words overflow-y-auto custom-scrollbar ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          style={{ maxHeight: nodeDims.height - 80, overflowWrap: 'break-word', wordBreak: 'break-word' }}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
