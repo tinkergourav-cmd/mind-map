@@ -1,0 +1,21 @@
+{
+  "project_type": "React SPA (mind mapping / task management tool called ThoughtFlow)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite 6 with Tailwind CSS 3.4 and PostCSS",
+  "test_framework": "No test framework configured",
+  "build_command": "npm run build",
+  "test_command": null,
+  "verification_instructions": "Run `npm run build` and confirm it completes without errors. Visually inspect that no references to TaskPanel or taskViewMode remain in the source.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "OPEN_INTERNET - full network access available",
+  "contribution_requirements": "None documented",
+  "key_patterns": "Single-file components in src/. App.jsx is a large monolithic component (~5945 lines) managing all state. Task state: tasks, taskGroups, showTaskPanel, taskViewMode, isSelectingTaskLocation, selectingLocationForTaskId. taskConstants.js exports shared constants (GROUP_COLORS) used by both task views.",
+  "relevant_files": [
+    "src/App.jsx",
+    "src/FullTaskManager.jsx",
+    "src/TaskPanel.jsx",
+    "src/taskConstants.js"
+  ],
+  "directory_structure": "src/ contains all components (App.jsx, FullTaskManager.jsx, TaskPanel.jsx, MiniMap.jsx, PinPanel.jsx, ReminderPanel.jsx, taskConstants.js, main.jsx, index.css). public/ has static assets. Config at root: vite.config.js, tailwind.config.js, postcss.config.js, package.json."
+}

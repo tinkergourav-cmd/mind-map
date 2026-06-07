@@ -18,7 +18,6 @@ import {
   Folder,
   Pencil,
   ChevronUp,
-  PanelLeftClose,
   Palette,
 } from 'lucide-react';
 import { GROUP_COLORS } from './taskConstants';
@@ -86,7 +85,6 @@ export default function FullTaskManager({
   onRenameGroup,
   onDeleteGroup,
   onUpdateGroupColor,
-  onSwitchToSidebar,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -347,15 +345,6 @@ export default function FullTaskManager({
           >
             <Plus className="w-3.5 h-3.5" />
             New Task
-          </button>
-
-          {/* Sidebar button */}
-          <button
-            onClick={onSwitchToSidebar}
-            className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors"
-            title="Collapse to Sidebar"
-          >
-            <PanelLeftClose className="w-4 h-4" />
           </button>
 
           {/* Close */}

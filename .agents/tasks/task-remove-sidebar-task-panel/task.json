@@ -1,0 +1,7 @@
+{
+  "task_id": "task-remove-sidebar-task-panel",
+  "task_description": "Remove the side-panel task system completely and make the full-screen task panel the sole task management interface. Remove all UI elements, buttons, toggles, shortcuts, and code related to the side-panel view. Clean up unused components, state, event handlers, and styling.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

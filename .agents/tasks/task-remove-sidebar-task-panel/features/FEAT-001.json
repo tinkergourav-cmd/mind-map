@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Remove the side-panel task system entirely and make the full-screen task panel the only task interface. This involves: removing TaskPanel.jsx usage and file, removing the taskViewMode state, updating all task button triggers to open fullscreen directly, removing the 'Collapse to Sidebar' button from FullTaskManager, and cleaning up all related code.",
+  "status": "in_progress",
+  "steps": [
+    "In src/App.jsx: Remove the import of TaskPanel from './TaskPanel' (line 15). Keep the FullTaskManager import.",
+    "In src/App.jsx: Remove the `taskViewMode` state declaration (line 435: `const [taskViewMode, setTaskViewMode] = useState('sidebar');`)",
+    "In src/App.jsx: Update the T key shortcut handler (around line 1426-1429) - keep it toggling `setShowTaskPanel(prev => !prev)` as is (no change needed here since we just remove view mode logic)",
+    "In src/App.jsx: In the task location set handler (around line 2540), keep `setShowTaskPanel(true)` as is",
+    "In src/App.jsx: Remove the entire TaskPanel rendering block (around lines 5588-5610): the conditional `{showTaskPanel && viewMode === 'canvas' && taskViewMode === 'sidebar' && (<TaskPanel ... />)}`",
+    "In src/App.jsx: Update the FullTaskManager rendering block (around lines 5613-5639): change the condition from `{showTaskPanel && taskViewMode === 'fullscreen' && (` to just `{showTaskPanel && (`. Remove the `onSwitchToSidebar` prop. Change the `onClose` prop from `() => { setShowTaskPanel(false); setTaskViewMode('sidebar'); }` to simply `() => setShowTaskPanel(false)`.",
+    "In src/FullTaskManager.jsx: Remove the `onSwitchToSidebar` prop from the function signature (line 89). Remove the 'Collapse to Sidebar' button and its PanelLeftClose icon import (around lines 352-358). Remove PanelLeftClose from the lucide-react import at line 20.",
+    "Delete the file src/TaskPanel.jsx entirely since it is no longer used.",
+    "Run `npm run build` to confirm the project builds cleanly with no errors."
+  ],
+  "acceptance_criteria": [
+    "The file src/TaskPanel.jsx no longer exists",
+    "No import of TaskPanel exists in any source file",
+    "No reference to taskViewMode or setTaskViewMode exists in any source file",
+    "No onSwitchToSidebar or onExpandToFullscreen prop references exist in any source file",
+    "No PanelLeftClose import exists in FullTaskManager.jsx",
+    "The T key shortcut opens/closes the full-screen task panel",
+    "The Tasks button in the sidebar opens/closes the full-screen task panel",
+    "The full-screen task panel's close button simply closes the panel (no view mode reset)",
+    "`npm run build` succeeds with no errors"
+  ],
+  "verification": [
+    "Run `npm run build` in /projects/sandbox/mind-map and confirm exit code 0 with no errors",
+    "Run `grep -r 'TaskPanel' src/` to confirm no remaining references",
+    "Run `grep -r 'taskViewMode' src/` to confirm no remaining references",
+    "Run `grep -r 'onSwitchToSidebar' src/` to confirm no remaining references",
+    "Run `grep -r 'onExpandToFullscreen' src/` to confirm no remaining references"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
