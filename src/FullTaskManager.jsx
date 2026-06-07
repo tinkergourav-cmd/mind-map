@@ -90,7 +90,8 @@ export default function FullTaskManager({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [collapsedGroups, setCollapsedGroups] = useState({});
-  const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
 
   // New task form state
@@ -124,10 +125,19 @@ export default function FullTaskManager({
   };
 
   const handleRowClick = (task) => {
-    if (expandedTaskId === task.id) {
-      setExpandedTaskId(null);
+    if (selectedTaskId === task.id) {
+      setSelectedTaskId(null);
     } else {
-      setExpandedTaskId(task.id);
+      setSelectedTaskId(task.id);
+    }
+  };
+
+  const handleRowDoubleClick = (task) => {
+    if (editingTaskId === task.id) {
+      setEditingTaskId(null);
+    } else {
+      setEditingTaskId(task.id);
+      setSelectedTaskId(null);
       setEditTitle(task.title);
       setEditNotes(task.notes || '');
       setEditStatus(task.status);
@@ -139,7 +149,7 @@ export default function FullTaskManager({
 
   const handleSaveExpanded = () => {
     if (!editTitle.trim()) return;
-    onUpdateTask(expandedTaskId, {
+    onUpdateTask(editingTaskId, {
       title: editTitle.trim(),
       notes: editNotes.trim(),
       status: editStatus,
@@ -147,7 +157,7 @@ export default function FullTaskManager({
       dueDate: editDueDate || null,
       groupId: editGroupId,
     });
-    setExpandedTaskId(null);
+    setEditingTaskId(null);
   };
 
   const handleCreateTask = (andSetLocation = false) => {
@@ -470,12 +480,13 @@ export default function FullTaskManager({
               {/* Table header */}
               {!isCollapsed && groupTasks.length > 0 && (
                 <div className="flex items-center px-4 py-1 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400 font-medium">
-                  <span className="w-8 shrink-0">Status</span>
+                  <span className="w-6 shrink-0">Status</span>
                   <span className="flex-1 min-w-0">Task</span>
-                  <span className="w-12 shrink-0 text-center">Loc</span>
-                  <span className="w-20 shrink-0 text-center">Priority</span>
-                  <span className="w-24 shrink-0 text-center">Due Date</span>
-                  <span className="w-16 shrink-0"></span>
+                  <span className="w-16 shrink-0 text-center">Group</span>
+                  <span className="w-16 shrink-0 text-center">Priority</span>
+                  <span className="w-20 shrink-0 text-center">Due Date</span>
+                  <span className="w-8 shrink-0 text-center">Loc</span>
+                  <span className="w-20 shrink-0"></span>
                 </div>
               )}
 
@@ -484,16 +495,19 @@ export default function FullTaskManager({
                 const statusCfg = getStatusConfig(task.status);
                 const StatusIcon = statusCfg.icon;
                 const priorityCfg = getPriorityConfig(task.priority);
-                const isExpanded = expandedTaskId === task.id;
+                const isEditing = editingTaskId === task.id;
+                const isSelected = selectedTaskId === task.id;
+                const taskGroup = groups.find(g => g.id === (task.groupId || 'inbox'));
 
                 return (
                   <div key={task.id}>
                     {/* Task row */}
                     <div
                       className={`flex items-center px-4 py-1.5 border-b border-slate-50 cursor-pointer transition-colors border-l-2 ${
-                        isExpanded ? `bg-slate-50 ${colorCfg.headerBorder}` : `border-l-transparent hover:bg-slate-50`
+                        isEditing ? `bg-slate-50 ${colorCfg.headerBorder}` : isSelected ? `bg-indigo-50/50 border-l-transparent` : `border-l-transparent hover:bg-slate-50`
                       }`}
                       onClick={() => handleRowClick(task)}
+                      onDoubleClick={() => handleRowDoubleClick(task)}
                     >
                       {/* Status icon */}
                       <button
@@ -502,7 +516,7 @@ export default function FullTaskManager({
                           const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
                           onUpdateTask(task.id, { status: nextStatus });
                         }}
-                        className={`w-8 shrink-0 ${statusCfg.color} hover:text-indigo-600 transition-colors`}
+                        className={`w-6 shrink-0 ${statusCfg.color} hover:text-indigo-600 transition-colors`}
                         title={`Status: ${statusCfg.label}`}
                       >
                         <StatusIcon className="w-4 h-4" />
@@ -531,8 +545,33 @@ export default function FullTaskManager({
                         )}
                       </div>
 
+                      {/* Group badge */}
+                      <div className="w-16 shrink-0 text-center">
+                        {taskGroup && taskGroup.id !== 'inbox' && (
+                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 truncate inline-block max-w-[56px]">
+                            {taskGroup.name}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Priority */}
+                      <div className="w-16 shrink-0 text-center">
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${priorityCfg.badgeClass}`}>
+                          {priorityCfg.label}
+                        </span>
+                      </div>
+
+                      {/* Due Date */}
+                      <div className="w-20 shrink-0 text-center">
+                        {task.dueDate && (
+                          <span className={`text-[10px] ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-500'}`}>
+                            {formatDueDate(task.dueDate)}
+                          </span>
+                        )}
+                      </div>
+
                       {/* Location */}
-                      <div className="w-12 shrink-0 text-center">
+                      <div className="w-8 shrink-0 text-center">
                         {pinExistsForTask(task) && (
                           <button
                             onClick={(e) => {
@@ -547,24 +586,15 @@ export default function FullTaskManager({
                         )}
                       </div>
 
-                      {/* Priority */}
-                      <div className="w-20 shrink-0 text-center">
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${priorityCfg.badgeClass}`}>
-                          {priorityCfg.label}
-                        </span>
-                      </div>
-
-                      {/* Due Date */}
-                      <div className="w-24 shrink-0 text-center">
-                        {task.dueDate && (
-                          <span className={`text-[10px] ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-500'}`}>
-                            {formatDueDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Reorder buttons */}
-                      <div className="w-16 shrink-0 flex items-center justify-end gap-0.5">
+                      {/* Actions: Edit + Reorder */}
+                      <div className="w-20 shrink-0 flex items-center justify-end gap-0.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRowDoubleClick(task); }}
+                          className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up', 'group'); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
@@ -582,8 +612,15 @@ export default function FullTaskManager({
                       </div>
                     </div>
 
-                    {/* Expanded area */}
-                    {isExpanded && (
+                    {/* Selected: notes preview (read-only) */}
+                    {isSelected && !isEditing && task.notes && task.notes.trim() && (
+                      <div className="text-[11px] text-slate-500 px-4 py-1.5 bg-slate-50/50 border-b border-slate-100 overflow-hidden max-h-[3.5rem] line-clamp-3">
+                        {task.notes}
+                      </div>
+                    )}
+
+                    {/* Edit mode: full edit panel */}
+                    {isEditing && (
                       <div className={`px-4 py-3 bg-slate-50 border-b border-slate-200 border-l-2 ${colorCfg.headerBorder}`}>
                         <div className="max-w-2xl space-y-2">
                           {/* Notes */}
@@ -656,7 +693,7 @@ export default function FullTaskManager({
                               Save
                             </button>
                             <button
-                              onClick={() => setExpandedTaskId(null)}
+                              onClick={() => setEditingTaskId(null)}
                               className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors"
                             >
                               Cancel
@@ -678,7 +715,7 @@ export default function FullTaskManager({
                               </button>
                             )}
                             <button
-                              onClick={() => { onDeleteTask(task.id); setExpandedTaskId(null); }}
+                              onClick={() => { onDeleteTask(task.id); setEditingTaskId(null); }}
                               className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-semibold rounded transition-colors flex items-center gap-1 ml-auto"
                             >
                               <Trash2 className="w-3 h-3" />
