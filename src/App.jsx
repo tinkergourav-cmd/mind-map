@@ -549,9 +549,7 @@ export default function WorkflowApp() {
         }
         el = el.parentElement;
       }
-      // If no scrollable card found or no overflow, do nothing (don't zoom)
-      e.preventDefault();
-      return;
+      // No scrollable card found or no overflow, fall through to normal zoom
     }
 
     e.preventDefault();
