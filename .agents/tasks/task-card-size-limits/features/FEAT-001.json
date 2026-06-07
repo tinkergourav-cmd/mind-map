@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Implement maximum size constraints (A4-equivalent) on markdown cards with internal vertical scrolling, while preserving natural auto-sizing for smaller content.",
+  "status": "completed",
+  "steps": [
+    "Step 1: Update getNodeDimensions function (src/App.jsx, line 508) to increase the maximum card width to approximately 600px (A4-equivalent width on canvas). The current cap is Math.min(380, width). Change this to approximately 600. Also add a height calculation that grows naturally but caps at approximately 800px (A4-equivalent height). Return both width and height from the function.",
+    "Step 2: Update the card outer container div (src/App.jsx, around line 4748) to apply the max-height constraint. Add maxHeight to the style object using nodeDims.height or a fixed MAX_CARD_HEIGHT constant (approximately 800px). Ensure overflow is hidden at this level so the card itself does not grow beyond the max.",
+    "Step 3: Update the content area wrapper div (src/App.jsx, around line 4860) - the div with className containing 'mt-2 flex-1' - to add max-height and overflow-y:auto so content scrolls internally when it exceeds available space. Use a CSS class or inline style like 'overflow-y: auto; max-height: calc(100% - title area)'. The simplest approach: add 'overflow-y-auto' and 'max-h-[calc(800px-80px)]' or similar to the content div, or use flex-1 with overflow-y-auto (since the parent has a fixed max-height, flex-1 + overflow-y-auto will handle it).",
+    "Step 4: Add CSS for custom-scrollbar styling in src/index.css. The class 'custom-scrollbar' is already referenced in App.jsx but not defined. Add a thin, subtle scrollbar style for webkit and Firefox: thin scrollbar with slate/transparent track.",
+    "Step 5: Ensure word-wrap behavior prevents horizontal scrolling. In the markdown content container and MarkdownRenderer, add word-wrap/overflow-wrap: break-word. Check the existing .markdown-content pre style in index.css - it already has overflow-x:auto and max-width:100% which is good for code blocks. Add 'break-words' (Tailwind) or 'word-break: break-word' to the content container to prevent horizontal overflow of long text.",
+    "Step 6: Define max card dimension constants at the top of App.jsx (near MARKDOWN_ZOOM_THRESHOLD on line 336) for maintainability: const MAX_CARD_WIDTH = 600; const MAX_CARD_HEIGHT = 800; Use these in getNodeDimensions and the card container style."
+  ],
+  "acceptance_criteria": [
+    "Small cards with little content remain compact and auto-sized (no change in behavior)",
+    "Cards with moderate content expand naturally up to the maximum dimensions",
+    "Cards never exceed approximately 600px width and 800px height (A4-equivalent)",
+    "Content that exceeds the maximum height becomes internally scrollable with vertical scrollbar",
+    "Long text lines wrap within the card width - no horizontal scrollbar on text content",
+    "The custom-scrollbar class provides a subtle, thin scrollbar appearance",
+    "npm run build succeeds without errors"
+  ],
+  "verification": [
+    "Run 'npm run build' and confirm it succeeds without errors",
+    "Verify MAX_CARD_WIDTH and MAX_CARD_HEIGHT constants exist near line 336 in App.jsx",
+    "Verify getNodeDimensions returns both width and height with proper caps",
+    "Verify card container div applies maxHeight from the dimensions",
+    "Verify content area has overflow-y-auto for internal scrolling",
+    "Verify custom-scrollbar CSS class is defined in index.css"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation complete. Build passes. Constants MAX_CARD_WIDTH=600 and MAX_CARD_HEIGHT=800 defined at line 336. getNodeDimensions now returns {width, height} with both capped. Card container applies maxHeight+overflow:hidden. Content div conditionally uses overflow-y-auto and custom-scrollbar only when nodeDims.height >= MAX_CARD_HEIGHT; smaller cards use overflow-hidden with no maxHeight constraint. Custom-scrollbar CSS defined in index.css. Word-break applied via both Tailwind class and inline styles. Bug fix applied: scrollbars no longer appear on small/medium cards."
+}
