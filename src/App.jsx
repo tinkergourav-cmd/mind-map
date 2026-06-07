@@ -3209,6 +3209,22 @@ export default function WorkflowApp() {
     setTaskGroups(prev => prev.filter(g => g.id !== groupId));
   };
 
+  const reorderTaskGroup = (groupId, direction) => {
+    setTaskGroups(prev => {
+      const sorted = [...prev].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      const idx = sorted.findIndex(g => g.id === groupId);
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= sorted.length) return prev;
+      const reindexed = {};
+      sorted.forEach((g, i) => { reindexed[g.id] = i + 1; });
+      const targetId = sorted[swapIdx].id;
+      const temp = reindexed[groupId];
+      reindexed[groupId] = reindexed[targetId];
+      reindexed[targetId] = temp;
+      return prev.map(g => reindexed[g.id] !== undefined ? { ...g, sortOrder: reindexed[g.id] } : g);
+    });
+  };
+
   const createGroup = (clientX, clientY) => {
     takeSnapshot();
     const rect = workspaceRef.current.getBoundingClientRect();
@@ -5618,6 +5634,7 @@ export default function WorkflowApp() {
             onRenameGroup={renameTaskGroup}
             onDeleteGroup={deleteTaskGroup}
             onUpdateGroupColor={updateTaskGroupColor}
+            onReorderGroup={reorderTaskGroup}
             mode={taskPanelMode}
           />
         )}

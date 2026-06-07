@@ -85,6 +85,7 @@ export default function FullTaskManager({
   onRenameGroup,
   onDeleteGroup,
   onUpdateGroupColor,
+  onReorderGroup,
   mode = 'fullscreen',
 }) {
   const isPanel = mode === 'panel';
@@ -469,6 +470,24 @@ export default function FullTaskManager({
 
                 {/* Group actions */}
                 <div className="flex items-center gap-1 ml-auto">
+                  {/* Reorder Up */}
+                  <button
+                    onClick={() => onReorderGroup(group.id, 'up')}
+                    className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                    title="Move Group Up"
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </button>
+
+                  {/* Reorder Down */}
+                  <button
+                    onClick={() => onReorderGroup(group.id, 'down')}
+                    className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                    title="Move Group Down"
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+
                   {/* Color picker toggle */}
                   <button
                     onClick={() => setColorPickerGroupId(colorPickerGroupId === group.id ? null : group.id)}
