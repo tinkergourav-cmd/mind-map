@@ -1,0 +1,7 @@
+{
+  "task_id": "task-card-editor-panel",
+  "task_description": "Add a dedicated side panel that acts as a Card Content Editor + Previewer. When exactly one card is selected on the canvas, the panel shows the card title and content for comfortable editing with a markdown preview. When no card or multiple cards are selected, the panel shows an empty state. Changes made in the panel immediately update the selected card on the canvas.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
