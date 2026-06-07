@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Refactor TaskPanel.jsx (sidebar) to separate viewing from editing: single click selects a task and shows a read-only notes preview beneath it, double click or Edit button opens edit mode. Increase sidebar width, reduce spacing for better information density.",
+  "status": "completed",
+  "steps": [
+    "In src/TaskPanel.jsx, change the top-level container width from 'w-80' (320px) to 'w-96' (384px) to give more horizontal room for task information.",
+    "In the task display mode section (the non-editing branch of the task row rendering), ensure single click (handleTaskClick) only sets selectedTaskId without opening any edit form. The existing code already does this correctly.",
+    "When a task is selected (selectedTaskId === task.id) and NOT in edit mode, show a compact read-only notes preview directly beneath the task row. This should display only task.notes content in a small read-only div (e.g., a pale background div with the notes text). Do NOT show editable fields, dropdowns, buttons, or forms in this preview.",
+    "Ensure double-click (handleTaskDoubleClick) opens the full edit form as it currently does (calls startEditTask).",
+    "Ensure the Edit button (Edit3 icon in the hover action buttons) also opens edit mode as it currently does.",
+    "Reduce vertical padding on task rows: change 'py-1' to 'py-0.5' or similar to increase task density.",
+    "Reduce spacing in the Row 2 (Group, Priority, Due Date) meta line: make it more compact.",
+    "The notes preview should be minimal: only show if notes exist, use 'text-[11px] text-slate-500 px-3 py-1 bg-slate-50/50' or similar light styling, show max 2-3 lines with overflow-hidden and a subtle truncation."
+  ],
+  "acceptance_criteria": [
+    "Single clicking a task row highlights it and shows read-only notes beneath it, without opening any edit form.",
+    "Double clicking a task row opens the full edit form with all fields.",
+    "Clicking the Edit (pencil) button on hover also opens the full edit form.",
+    "The sidebar width is increased from w-80 to w-96.",
+    "Task rows have reduced vertical spacing so more tasks are visible.",
+    "Notes preview is read-only - no inputs, dropdowns, or buttons.",
+    "All existing functionality (task groups, colors, location system, ordering, persistence, status system) remains intact.",
+    "npm run build succeeds without errors."
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it completes successfully without errors."
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation straightforward. All changes in src/TaskPanel.jsx. The notes preview is placed outside the display-mode div but inside the key={task.id} wrapper div, so it appears after the task row when selected. Build succeeds cleanly."
+}

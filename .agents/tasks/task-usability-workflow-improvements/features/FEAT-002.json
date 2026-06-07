@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Refactor FullTaskManager.jsx (full-screen view) to separate viewing from editing: single click selects a task and shows only a notes preview (no edit form), double click or Edit button opens full edit mode. Tighten layout to reduce empty horizontal space and bring actions closer to task info.",
+  "status": "completed",
+  "steps": [
+    "In src/FullTaskManager.jsx, add a new state variable `selectedTaskId` (separate from `expandedTaskId`) for tracking which task is selected for notes preview.",
+    "Add a new state variable `editingTaskId` to track which task is in full edit mode (currently this role is served by `expandedTaskId`).",
+    "Refactor handleRowClick: single click should set selectedTaskId to the clicked task (toggling off if already selected). It should NOT open the edit form or set expandedTaskId.",
+    "Add handleRowDoubleClick: double click should open full edit mode (set editingTaskId, populate edit fields).",
+    "When a task is selected (selectedTaskId === task.id) and NOT in edit mode, render a compact read-only notes preview below the task row. Show only the notes text in a light-styled div. No forms, dropdowns, or action buttons.",
+    "When a task is in edit mode (editingTaskId === task.id), show the full edit panel with Notes textarea, Status/Priority/Due Date/Group dropdowns, and Save/Cancel/Set Location/Delete buttons (like current expanded area).",
+    "Add an Edit button in the task row actions column (beside the reorder arrows) that opens edit mode on click.",
+    "Tighten the table header column widths: reduce the Location column from w-12 to w-10, reduce Priority from w-20 to w-16, reduce Due Date from w-24 to w-20. Add a compact Actions column (w-20) that includes Edit button and reorder controls, replacing the current separate w-16 reorder column.",
+    "In the task row, use a single-line layout: Status | Task Name | Group badge (compact) | Priority | Due | Location pin | Actions (Edit, Up, Down). This keeps everything close together.",
+    "Ensure the selected row has a subtle highlight (bg-indigo-50/50) to indicate selection without being too visually heavy.",
+    "All existing functionality must remain intact: task CRUD, groups, colors, location system, ordering, import/export, persistence."
+  ],
+  "acceptance_criteria": [
+    "Single clicking a task row in full-screen view selects it and shows a read-only notes preview (if notes exist).",
+    "Double clicking a task row opens the full edit panel with all editable fields.",
+    "An Edit button in the task row actions area also opens the full edit panel.",
+    "The layout is tighter with less empty horizontal space between task info and actions.",
+    "Notes preview is read-only with no form elements.",
+    "All existing task management features remain functional.",
+    "npm run build succeeds without errors."
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it completes successfully without errors."
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation complete. Replaced expandedTaskId with selectedTaskId + editingTaskId pattern. Single click now shows notes preview only, double click or Edit button opens full edit panel. Tightened column widths and added Group badge column. Build succeeds cleanly."
+}

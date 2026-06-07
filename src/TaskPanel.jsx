@@ -8,7 +8,6 @@ import {
   ChevronUp,
   MapPin,
   Navigation,
-  Calendar,
   Trash2,
   Circle,
   CheckCircle,
@@ -123,7 +122,13 @@ export default function TaskPanel({
 
   if (!showPanel) return null;
 
-  const groups = taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
+  const groups = (() => {
+    const raw = taskGroups && taskGroups.length > 0 ? taskGroups : [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+    if (!raw.find(g => g.id === 'inbox')) {
+      return [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }, ...raw];
+    }
+    return raw;
+  })();
 
   const getGroupName = (groupId) => {
     const group = groups.find(g => g.id === groupId);
@@ -189,7 +194,7 @@ export default function TaskPanel({
   };
 
   const handleTaskClick = (task) => {
-    setSelectedTaskId(task.id);
+    setSelectedTaskId(prev => prev === task.id ? null : task.id);
     setStatusDropdownTaskId(null);
   };
 
@@ -284,7 +289,7 @@ export default function TaskPanel({
   ];
 
   return (
-    <div className="w-80 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
+    <div className="w-1/2 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
       {/* Location Selection Banner */}
       {isSelectingLocation && (
         <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 flex items-center gap-2 shrink-0">
@@ -699,14 +704,14 @@ export default function TaskPanel({
                   ) : (
                     /* Display Mode - enhanced preview with quick actions */
                     <div
-                      className={`px-3 py-1 border-b border-slate-50 cursor-pointer group transition-colors ${
+                      className={`px-3 py-0.5 border-b border-slate-50 cursor-pointer group transition-colors ${
                         selectedTaskId === task.id ? 'bg-indigo-50 border-l-2 border-l-indigo-400' : `hover:bg-slate-50 border-l-2 ${(() => { const tg = groups.find(g => g.id === (task.groupId || 'inbox')); return getGroupColor(tg).headerBorder; })()}`
                       }`}
                       onClick={() => handleTaskClick(task)}
                       onDoubleClick={() => handleTaskDoubleClick(task)}
                     >
-                      {/* Row 1: Status, Title, Location Button */}
-                      <div className="flex items-center gap-2">
+                      {/* Single row: Status | Title | Group | Priority | Due Date | Location | Actions */}
+                      <div className="flex items-center gap-1.5">
                         {/* Status Icon - clickable for quick toggle */}
                         {(() => {
                           const statusCfg = getStatusConfig(task.status);
@@ -720,7 +725,7 @@ export default function TaskPanel({
                               className={`shrink-0 ${statusCfg.color} hover:text-indigo-600 transition-colors`}
                               title={`Status: ${statusCfg.label} (click to change)`}
                             >
-                              <StatusIcon className="w-4 h-4" />
+                              <StatusIcon className="w-3.5 h-3.5" />
                             </button>
                           );
                         })()}
@@ -730,17 +735,34 @@ export default function TaskPanel({
                           {task.title}
                         </span>
 
-                        {/* Location navigation button - direct access */}
+                        {/* Group Name */}
+                        <span className="text-[10px] text-slate-400 font-medium shrink-0 max-w-[60px] truncate">
+                          {getGroupName(task.groupId || 'inbox')}
+                        </span>
+
+                        {/* Priority Badge */}
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${getPriorityConfig(task.priority).badgeClass}`}>
+                          {getPriorityConfig(task.priority).label}
+                        </span>
+
+                        {/* Due Date */}
+                        {task.dueDate && task.status !== 'completed' && (
+                          <span className={`text-[10px] shrink-0 ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
+                            {formatDueDate(task.dueDate)}
+                          </span>
+                        )}
+
+                        {/* Location navigation button */}
                         {pinExistsForTask(task) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onNavigateToLocation(task.locationPinId, task.locationWorkspaceId);
                             }}
-                            className="shrink-0 p-1 rounded hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 transition-colors"
+                            className="shrink-0 p-0.5 rounded hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 transition-colors"
                             title="Go to location"
                           >
-                            <Navigation className="w-3.5 h-3.5" />
+                            <Navigation className="w-3 h-3" />
                           </button>
                         )}
 
@@ -748,14 +770,14 @@ export default function TaskPanel({
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           <button
                             onClick={(e) => { e.stopPropagation(); startEditTask(task); }}
-                            className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
                             title="Edit"
                           >
                             <Edit3 className="w-3 h-3" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                            className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+                            className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -777,30 +799,9 @@ export default function TaskPanel({
                         </div>
                       </div>
 
-                      {/* Row 2: Group, Priority, Due Date */}
-                      <div className="flex items-center gap-2 mt-0.5 ml-6">
-                        {/* Group Name */}
-                        <span className="text-[10px] text-slate-400 font-medium truncate">
-                          {getGroupName(task.groupId || 'inbox')}
-                        </span>
-
-                        {/* Priority Badge */}
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${getPriorityConfig(task.priority).badgeClass}`}>
-                          {getPriorityConfig(task.priority).label}
-                        </span>
-
-                        {/* Due Date */}
-                        {task.dueDate && task.status !== 'completed' && (
-                          <span className={`text-[10px] shrink-0 flex items-center gap-0.5 ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
-                            <Calendar className="w-3 h-3" />
-                            {formatDueDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-
                       {/* Status Dropdown - inline, shown when status icon clicked */}
                       {statusDropdownTaskId === task.id && (
-                        <div className="mt-1.5 ml-6 flex items-center gap-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="mt-1 ml-5 flex items-center gap-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
                           {STATUS_OPTIONS.map(s => {
                             const SIcon = s.icon;
                             return (
@@ -824,6 +825,13 @@ export default function TaskPanel({
                           })}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Read-only notes preview - shown when task is selected but not in edit mode */}
+                  {selectedTaskId === task.id && editingTaskId !== task.id && task.notes && task.notes.trim() && (
+                    <div className="text-[11px] text-slate-500 px-3 py-1 bg-slate-50/50 border-b border-slate-100 line-clamp-3 overflow-hidden whitespace-pre-wrap">
+                      {task.notes}
                     </div>
                   )}
                 </div>

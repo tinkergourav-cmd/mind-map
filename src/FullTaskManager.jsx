@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   X,
   Plus,
@@ -19,6 +19,7 @@ import {
   Pencil,
   ChevronUp,
   PanelLeftClose,
+  Palette,
 } from 'lucide-react';
 import { GROUP_COLORS } from './taskConstants';
 
@@ -90,8 +91,13 @@ export default function FullTaskManager({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [collapsedGroups, setCollapsedGroups] = useState({});
-  const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
+  const [statusDropdownTaskId, setStatusDropdownTaskId] = useState(null);
+  const [groupDropdownTaskId, setGroupDropdownTaskId] = useState(null);
+  const statusDropdownRef = useRef(null);
+  const groupDropdownRef = useRef(null);
 
   // New task form state
   const [newTitle, setNewTitle] = useState('');
@@ -114,20 +120,50 @@ export default function FullTaskManager({
   const [newGroupName, setNewGroupName] = useState('');
   const [renamingGroupId, setRenamingGroupId] = useState(null);
   const [renameGroupValue, setRenameGroupValue] = useState('');
+  const [colorPickerGroupId, setColorPickerGroupId] = useState(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (statusDropdownTaskId && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target)) {
+        setStatusDropdownTaskId(null);
+      }
+      if (groupDropdownTaskId && groupDropdownRef.current && !groupDropdownRef.current.contains(e.target)) {
+        setGroupDropdownTaskId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [statusDropdownTaskId, groupDropdownTaskId]);
 
   if (!showPanel) return null;
 
-  const groups = taskGroups || [{ id: 'inbox', name: 'Inbox', sortOrder: 0 }];
+  const groups = (() => {
+    const raw = taskGroups && taskGroups.length > 0 ? taskGroups : [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }];
+    if (!raw.find(g => g.id === 'inbox')) {
+      return [{ id: 'inbox', name: 'Inbox', sortOrder: 0, color: 'slate' }, ...raw];
+    }
+    return raw;
+  })();
 
   const toggleGroupCollapse = (groupId) => {
     setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
   const handleRowClick = (task) => {
-    if (expandedTaskId === task.id) {
-      setExpandedTaskId(null);
+    if (selectedTaskId === task.id) {
+      setSelectedTaskId(null);
     } else {
-      setExpandedTaskId(task.id);
+      setSelectedTaskId(task.id);
+    }
+  };
+
+  const handleRowDoubleClick = (task) => {
+    if (editingTaskId === task.id) {
+      setEditingTaskId(null);
+    } else {
+      setEditingTaskId(task.id);
+      setSelectedTaskId(null);
       setEditTitle(task.title);
       setEditNotes(task.notes || '');
       setEditStatus(task.status);
@@ -139,7 +175,7 @@ export default function FullTaskManager({
 
   const handleSaveExpanded = () => {
     if (!editTitle.trim()) return;
-    onUpdateTask(expandedTaskId, {
+    onUpdateTask(editingTaskId, {
       title: editTitle.trim(),
       notes: editNotes.trim(),
       status: editStatus,
@@ -147,7 +183,7 @@ export default function FullTaskManager({
       dueDate: editDueDate || null,
       groupId: editGroupId,
     });
-    setExpandedTaskId(null);
+    setEditingTaskId(null);
   };
 
   const handleCreateTask = (andSetLocation = false) => {
@@ -346,6 +382,13 @@ export default function FullTaskManager({
               autoFocus
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTask(); if (e.key === 'Escape') setShowNewTaskForm(false); }}
             />
+            <textarea
+              value={newNotes}
+              onChange={(e) => setNewNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              className="w-48 text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              rows={1}
+            />
             <select
               value={newGroupId}
               onChange={(e) => setNewGroupId(e.target.value)}
@@ -431,17 +474,28 @@ export default function FullTaskManager({
 
                 {/* Group actions */}
                 <div className="flex items-center gap-1 ml-auto">
-                  {/* Color picker dots */}
-                  <div className="flex items-center gap-0.5">
-                    {GROUP_COLORS.map(c => (
-                      <button
-                        key={c.id}
-                        onClick={() => onUpdateGroupColor(group.id, c.id)}
-                        className={`w-3 h-3 rounded-full ${c.dotColor} ${group.color === c.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''} hover:scale-125 transition-transform`}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
+                  {/* Color picker toggle */}
+                  <button
+                    onClick={() => setColorPickerGroupId(colorPickerGroupId === group.id ? null : group.id)}
+                    className={`p-1 rounded transition-colors ${colorPickerGroupId === group.id ? 'bg-slate-200 text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+                    title="Edit Color"
+                  >
+                    <Palette className="w-3 h-3" />
+                  </button>
+
+                  {/* Color picker dots (shown on toggle) */}
+                  {colorPickerGroupId === group.id && (
+                    <div className="flex items-center gap-0.5">
+                      {GROUP_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => { onUpdateGroupColor(group.id, c.id); setColorPickerGroupId(null); }}
+                          className={`w-3 h-3 rounded-full ${c.dotColor} ${group.color === c.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''} hover:scale-125 transition-transform`}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  )}
 
                   {/* Rename */}
                   {renamingGroupId !== group.id && (
@@ -470,12 +524,12 @@ export default function FullTaskManager({
               {/* Table header */}
               {!isCollapsed && groupTasks.length > 0 && (
                 <div className="flex items-center px-4 py-1 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wide text-slate-400 font-medium">
-                  <span className="w-8 shrink-0">Status</span>
-                  <span className="flex-1 min-w-0">Task</span>
-                  <span className="w-12 shrink-0 text-center">Loc</span>
-                  <span className="w-20 shrink-0 text-center">Priority</span>
-                  <span className="w-24 shrink-0 text-center">Due Date</span>
-                  <span className="w-16 shrink-0"></span>
+                  <span className="w-24 shrink-0">Status</span>
+                  <span className="w-[360px] shrink-0">Task</span>
+                  <span className="w-10 shrink-0 text-center">Loc</span>
+                  <span className="w-20 shrink-0 text-center">Actions</span>
+                  <span className="w-24 shrink-0 text-center">Group</span>
+                  <span className="w-40 shrink-0">Notes</span>
                 </div>
               )}
 
@@ -484,32 +538,62 @@ export default function FullTaskManager({
                 const statusCfg = getStatusConfig(task.status);
                 const StatusIcon = statusCfg.icon;
                 const priorityCfg = getPriorityConfig(task.priority);
-                const isExpanded = expandedTaskId === task.id;
+                const isEditing = editingTaskId === task.id;
+                const isSelected = selectedTaskId === task.id;
+                const taskGroup = groups.find(g => g.id === (task.groupId || 'inbox')) || { id: 'inbox', name: 'Ungrouped' };
 
                 return (
                   <div key={task.id}>
                     {/* Task row */}
                     <div
                       className={`flex items-center px-4 py-1.5 border-b border-slate-50 cursor-pointer transition-colors border-l-2 ${
-                        isExpanded ? `bg-slate-50 ${colorCfg.headerBorder}` : `border-l-transparent hover:bg-slate-50`
+                        isEditing ? `bg-slate-50 ${colorCfg.headerBorder}` : isSelected ? `bg-indigo-50/50 border-l-transparent` : `border-l-transparent hover:bg-slate-50`
                       }`}
                       onClick={() => handleRowClick(task)}
+                      onDoubleClick={() => handleRowDoubleClick(task)}
                     >
-                      {/* Status icon */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
-                          onUpdateTask(task.id, { status: nextStatus });
-                        }}
-                        className={`w-8 shrink-0 ${statusCfg.color} hover:text-indigo-600 transition-colors`}
-                        title={`Status: ${statusCfg.label}`}
-                      >
-                        <StatusIcon className="w-4 h-4" />
-                      </button>
+                      {/* Status - readable text with dropdown */}
+                      <div className="w-24 shrink-0 relative" ref={statusDropdownTaskId === task.id ? statusDropdownRef : null}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStatusDropdownTaskId(statusDropdownTaskId === task.id ? null : task.id);
+                            setGroupDropdownTaskId(null);
+                          }}
+                          className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors ${statusCfg.color}`}
+                          title="Change status"
+                        >
+                          <StatusIcon className="w-3 h-3" />
+                          <span>{statusCfg.label}</span>
+                          <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                        </button>
+                        {statusDropdownTaskId === task.id && (
+                          <div className="absolute top-full left-0 mt-0.5 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+                            {STATUS_OPTIONS.map(s => {
+                              const SIcon = s.icon;
+                              return (
+                                <button
+                                  key={s.value}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateTask(task.id, { status: s.value });
+                                    setStatusDropdownTaskId(null);
+                                  }}
+                                  className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors ${
+                                    task.status === s.value ? 'bg-indigo-50 font-medium' : ''
+                                  }`}
+                                >
+                                  <SIcon className={`w-3.5 h-3.5 ${s.color}`} />
+                                  <span className="text-slate-700">{s.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Title */}
-                      <div className="flex-1 min-w-0">
+                      <div className="w-[360px] shrink-0">
                         {editingTitleTaskId === task.id ? (
                           <input
                             type="text"
@@ -525,6 +609,7 @@ export default function FullTaskManager({
                           <span
                             className={`text-xs truncate block ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-700'}`}
                             onDoubleClick={(e) => handleTitleDoubleClick(e, task)}
+                            title={task.title}
                           >
                             {task.title}
                           </span>
@@ -532,7 +617,7 @@ export default function FullTaskManager({
                       </div>
 
                       {/* Location */}
-                      <div className="w-12 shrink-0 text-center">
+                      <div className="w-10 shrink-0 text-center">
                         {pinExistsForTask(task) && (
                           <button
                             onClick={(e) => {
@@ -547,24 +632,15 @@ export default function FullTaskManager({
                         )}
                       </div>
 
-                      {/* Priority */}
-                      <div className="w-20 shrink-0 text-center">
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${priorityCfg.badgeClass}`}>
-                          {priorityCfg.label}
-                        </span>
-                      </div>
-
-                      {/* Due Date */}
-                      <div className="w-24 shrink-0 text-center">
-                        {task.dueDate && (
-                          <span className={`text-[10px] ${task.dueDate < getToday() ? 'text-red-500 font-semibold' : 'text-slate-500'}`}>
-                            {formatDueDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Reorder buttons */}
-                      <div className="w-16 shrink-0 flex items-center justify-end gap-0.5">
+                      {/* Actions: Edit + Reorder */}
+                      <div className="w-20 shrink-0 flex items-center justify-center gap-0.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRowDoubleClick(task); }}
+                          className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); onReorderTask(task.id, 'up', 'group'); }}
                           className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
@@ -580,10 +656,62 @@ export default function FullTaskManager({
                           <ChevronDown className="w-3 h-3" />
                         </button>
                       </div>
+
+                      {/* Group dropdown */}
+                      <div className="w-24 shrink-0 text-center relative" ref={groupDropdownTaskId === task.id ? groupDropdownRef : null}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setGroupDropdownTaskId(groupDropdownTaskId === task.id ? null : task.id);
+                            setStatusDropdownTaskId(null);
+                          }}
+                          className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors inline-flex items-center gap-0.5 max-w-[88px] truncate"
+                          title="Change group"
+                        >
+                          <span className="truncate">{taskGroup.name}</span>
+                          <ChevronDown className="w-2.5 h-2.5 opacity-50 shrink-0" />
+                        </button>
+                        {groupDropdownTaskId === task.id && (
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+                            {groups.map(g => (
+                              <button
+                                key={g.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onUpdateTask(task.id, { groupId: g.id });
+                                  setGroupDropdownTaskId(null);
+                                }}
+                                className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors ${
+                                  (task.groupId || 'inbox') === g.id ? 'bg-indigo-50 font-medium' : ''
+                                }`}
+                              >
+                                <Folder className="w-3 h-3 text-slate-400" />
+                                <span className="text-slate-700">{g.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Notes preview (small, inline in row) */}
+                      <div className="w-40 shrink-0">
+                        {task.notes && task.notes.trim() && (
+                          <span className="text-[10px] text-slate-400 truncate block">
+                            {task.notes.substring(0, 60)}{task.notes.length > 60 ? '...' : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Expanded area */}
-                    {isExpanded && (
+                    {/* Selected: full notes (read-only, no truncation) */}
+                    {isSelected && !isEditing && task.notes && task.notes.trim() && (
+                      <div className="text-xs text-slate-600 px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 whitespace-pre-wrap leading-relaxed">
+                        {task.notes}
+                      </div>
+                    )}
+
+                    {/* Edit mode: full edit panel */}
+                    {isEditing && (
                       <div className={`px-4 py-3 bg-slate-50 border-b border-slate-200 border-l-2 ${colorCfg.headerBorder}`}>
                         <div className="max-w-2xl space-y-2">
                           {/* Notes */}
@@ -656,7 +784,7 @@ export default function FullTaskManager({
                               Save
                             </button>
                             <button
-                              onClick={() => setExpandedTaskId(null)}
+                              onClick={() => setEditingTaskId(null)}
                               className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded transition-colors"
                             >
                               Cancel
@@ -678,7 +806,7 @@ export default function FullTaskManager({
                               </button>
                             )}
                             <button
-                              onClick={() => { onDeleteTask(task.id); setExpandedTaskId(null); }}
+                              onClick={() => { onDeleteTask(task.id); setEditingTaskId(null); }}
                               className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-semibold rounded transition-colors flex items-center gap-1 ml-auto"
                             >
                               <Trash2 className="w-3 h-3" />
