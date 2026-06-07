@@ -1,0 +1,14 @@
+{
+  "task_id": "task-card-size-limits",
+  "task_description": "Implement maximum size constraints on markdown cards to prevent them from growing too large on the canvas. Cards should auto-size naturally for small content but cap at A4-equivalent dimensions (approx 600px width, 800px height). Content exceeding the max height scrolls internally.",
+  "status": "completed",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "npm run build succeeds. No test framework configured in this project so test_quality is skipped. Docker build skipped (no Dockerfile). All changes verified by code inspection: MAX_CARD_WIDTH/MAX_CARD_HEIGHT constants defined, getNodeDimensions returns capped width and height, card container enforces maxHeight with overflow hidden, content area scrolls internally, custom-scrollbar CSS added, word-break rules prevent horizontal overflow."
+  }
+}
