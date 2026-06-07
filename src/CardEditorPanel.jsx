@@ -29,7 +29,7 @@ export default function CardEditorPanel({ selectedNode, onUpdateNode, onSnapshot
   };
 
   return (
-    <div className="w-80 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
+    <div className="w-[40vw] bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0">
         <div className="flex items-center gap-2">

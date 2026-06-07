@@ -1428,6 +1428,20 @@ export default function WorkflowApp() {
     return () => window.removeEventListener('keydown', handleReminderKey);
   }, []);
 
+  // --- I key toggles card editor panel ---
+  useEffect(() => {
+    const handleCardEditorKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        setShowCardEditorPanel(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleCardEditorKey);
+    return () => window.removeEventListener('keydown', handleCardEditorKey);
+  }, []);
+
   // --- T key toggles task panel (single press), TT (double-press) toggles fullscreen ---
   useEffect(() => {
     const handleTaskKey = (e) => {
