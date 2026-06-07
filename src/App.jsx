@@ -525,9 +525,18 @@ export default function WorkflowApp() {
     }
     width = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, width));
 
-    // Estimate height based on content lines
-    const lines = newlineCount + 1;
-    const estimatedContentHeight = lines * 18 + 40; // 18px per line + padding
+    // Estimate height accounting for word-wrap: approximate chars per visual line
+    // based on card width (~7px per char at 12px font size for average text)
+    const avgCharWidth = 7;
+    const usableWidth = width - 24; // subtract card padding (12px each side)
+    const charsPerLine = Math.max(1, Math.floor(usableWidth / avgCharWidth));
+    // Count wrapped lines for each explicit line of text
+    const explicitLines = content.split('\n');
+    let visualLines = 0;
+    for (const line of explicitLines) {
+      visualLines += Math.max(1, Math.ceil(line.length / charsPerLine));
+    }
+    const estimatedContentHeight = visualLines * 18 + 40; // 18px per line + padding
     let height = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, estimatedContentHeight));
     const hasOverflow = estimatedContentHeight > MAX_CARD_HEIGHT;
 
@@ -576,6 +585,14 @@ export default function WorkflowApp() {
       };
     });
   }, []);
+
+  // Attach wheel handler imperatively with { passive: false } so preventDefault works in React 18
+  useEffect(() => {
+    const el = workspaceRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
@@ -4500,7 +4517,6 @@ export default function WorkflowApp() {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
-          onWheel={handleWheel}
           onContextMenu={handleContextMenu}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -4912,13 +4928,13 @@ export default function WorkflowApp() {
 
                   {/* Content */}
                   {(node.content || editingTextNode === node.id) ? (
-                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }} style={{ maxHeight: cardHeight - 60 }}>
+                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }} style={{ maxHeight: cardHeight - 80 }}>
                       {editingTextNode === node.id ? (
                         <textarea 
                           autoFocus
                           onBlur={() => setEditingTextNode(null)}
                           className="w-full h-full min-h-[2rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 card-scroll-area" 
-                          style={{ maxHeight: cardHeight - 60, overflowY: 'auto' }}
+                          style={{ maxHeight: cardHeight - 80, overflowY: 'auto' }}
                           value={node.content || ''} 
                           onChange={(e) => updateNode(node.id, { content: e.target.value })} 
                           placeholder="Write notes or details..." 
@@ -4927,7 +4943,7 @@ export default function WorkflowApp() {
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
                           className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed card-scroll-area ${editMode ? 'cursor-text' : 'cursor-default'}`}
-                          style={{ maxHeight: cardHeight - 60 }}
+                          style={{ maxHeight: cardHeight - 80 }}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
@@ -4958,7 +4974,7 @@ export default function WorkflowApp() {
 
                   {/* Clone indicator */}
                   {node.cloneSourceId && (
-                    <div className="absolute bottom-2 right-2">
+                    <div className="absolute bottom-2 left-2">
                       <Copy className="w-3 h-3 text-violet-400" />
                     </div>
                   )}
