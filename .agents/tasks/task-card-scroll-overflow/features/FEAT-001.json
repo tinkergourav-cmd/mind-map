@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix card content scrolling so that when content exceeds MAX_CARD_HEIGHT, the card displays a visible scrollbar and users can scroll through all content directly within the card. The current implementation has conflicting overflow properties that prevent reliable scrolling.",
+  "status": "completed",
+  "steps": [
+    "In src/App.jsx at line ~4765, change the outer card container's overflow from 'hidden' to 'visible' or remove it entirely. The current code `...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height, overflow: 'hidden' } : {})` clips the scrollbar of child elements. Change it to just set maxHeight without overflow:hidden, or change overflow to 'auto' on the outer container and remove the inner scroll container approach.",
+    "In src/App.jsx at line ~4866, change the content wrapper div from `className=\"mt-2 flex-1 overflow-hidden\"` to `className=\"mt-2 flex-1 min-h-0\"` (or `overflow-y-auto`). The `overflow-hidden` class on this wrapper prevents scrolling from reaching the inner content div. Using `min-h-0` allows flex children to shrink below their content size, enabling overflow-y-auto on the inner div to work.",
+    "In src/App.jsx at line ~4880-4881, ensure the scroll container div reliably becomes scrollable: (1) Keep the `overflow-y-auto custom-scrollbar` classes when nodeDims.height >= MAX_CARD_HEIGHT. (2) Change the maxHeight calculation from `nodeDims.height - 80` to a value that accounts for the title and padding properly (e.g., `nodeDims.height - 60` or use `calc` based on available space). The key is that the container must have both overflow-y:auto AND a constrained maxHeight to trigger scrolling.",
+    "In src/index.css, make the custom scrollbar more visible by increasing the width from 4px to 6px and using a slightly more opaque color for the thumb to clearly communicate to users that the content is scrollable. Consider adding a subtle fade/gradient indicator at the bottom of the scrollable area.",
+    "Ensure the outer card container uses `overflow: visible` or `overflow: hidden` only on the x-axis (overflow-x: hidden) so the scrollbar on the y-axis content area is not clipped. The card should use `display: flex; flex-direction: column` which it already does via the `flex flex-col` classes, so the content area can grow to fill available space and then scroll."
+  ],
+  "acceptance_criteria": [
+    "When a card's content exceeds MAX_CARD_HEIGHT (800px), a visible scrollbar appears on the content area",
+    "Users can scroll through all card content using the scrollbar or scroll gesture",
+    "The scrollbar is clearly visible (not hidden or clipped by parent overflow:hidden)",
+    "Markdown-rendered content (nested elements like lists, tables, code blocks) scrolls correctly within the container",
+    "Plain text content also scrolls correctly when exceeding the max height",
+    "The card title remains fixed/visible at the top while content scrolls beneath it",
+    "The application builds successfully with `npx vite build`"
+  ],
+  "verification": [
+    "Run `npx vite build` in /projects/sandbox/mind-map and confirm it succeeds without errors",
+    "Inspect the changes to confirm: (1) outer card no longer has overflow:hidden that would clip scrollbar, (2) content wrapper allows overflow to pass through, (3) inner content div has overflow-y:auto and a constrained maxHeight when content exceeds MAX_CARD_HEIGHT, (4) scrollbar CSS is more visible"
+  ],
+  "blocked_reason": null,
+  "findings": "All changes applied cleanly. Build passes. Three key changes: (1) outer card container uses overflowX:hidden + overflowY:visible instead of overflow:hidden to avoid clipping the scrollbar, (2) content wrapper uses min-h-0 instead of overflow-hidden to allow flex children to shrink and enable inner scrolling, (3) scrollbar made more visible with 6px width and darker thumb color."
+}
