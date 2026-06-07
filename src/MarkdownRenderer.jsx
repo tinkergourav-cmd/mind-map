@@ -3,6 +3,35 @@ import ReactMarkdown from 'react-markdown';
 
 const PREVIEW_LINES = 3;
 
+// Strip markdown syntax for clean plain-text preview
+function stripMarkdownSyntax(text) {
+  let result = text;
+  // Remove images ![alt](url)
+  result = result.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');
+  // Convert links [text](url) to just text
+  result = result.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+  // Remove heading markers
+  result = result.replace(/^#{1,6}\s+/gm, '');
+  // Remove horizontal rules (---, ___, ***)
+  result = result.replace(/^(\s*[-*_]){3,}\s*$/gm, '');
+  // Remove strikethrough markers
+  result = result.replace(/~~(.*?)~~/g, '$1');
+  // Remove bold/italic markers (** __ * _)
+  result = result.replace(/\*\*\*(.*?)\*\*\*/g, '$1');
+  result = result.replace(/___(.*?)___/g, '$1');
+  result = result.replace(/\*\*(.*?)\*\*/g, '$1');
+  result = result.replace(/__(.*?)__/g, '$1');
+  result = result.replace(/\*([^*]+)\*/g, '$1');
+  result = result.replace(/(?<!\w)_([^_]+)_(?!\w)/g, '$1');
+  // Remove inline code backticks
+  result = result.replace(/`([^`]*)`/g, '$1');
+  // Remove list markers (- * + at start of lines)
+  result = result.replace(/^\s*[-*+]\s+/gm, '');
+  // Remove blockquote markers
+  result = result.replace(/^\s*>\s?/gm, '');
+  return result;
+}
+
 // Extracted to module scope so react-markdown receives a stable reference
 const markdownComponents = {
   h1: ({ children }) => <h1 className="text-sm font-bold text-slate-800 mt-2 mb-1">{children}</h1>,
@@ -79,13 +108,16 @@ const MarkdownRenderer = React.memo(({ content, isZoomedIn }) => {
   if (!content) return null;
 
   if (!isZoomedIn) {
-    // Lightweight plain-text preview (first ~3 lines, truncated)
+    // Lightweight plain-text preview (first ~3 lines, stripped of markdown syntax)
     const lines = content.split('\n').filter(l => l.trim() !== '').slice(0, PREVIEW_LINES);
-    const preview = lines.join('\n');
+    const preview = lines.map(line => stripMarkdownSyntax(line)).join('\n');
     const isTruncated = content.split('\n').filter(l => l.trim() !== '').length > PREVIEW_LINES;
     return (
-      <div className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap line-clamp-3">
-        {preview}{isTruncated ? '...' : ''}
+      <div>
+        <div className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap line-clamp-3">
+          {preview}{isTruncated ? '...' : ''}
+        </div>
+        <div className="text-[10px] text-slate-400 italic mt-1">zoom in to read</div>
       </div>
     );
   }
