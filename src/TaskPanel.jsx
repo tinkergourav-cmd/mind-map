@@ -284,7 +284,7 @@ export default function TaskPanel({
   ];
 
   return (
-    <div className="w-80 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
+    <div className="w-96 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
       {/* Location Selection Banner */}
       {isSelectingLocation && (
         <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 flex items-center gap-2 shrink-0">
@@ -699,7 +699,7 @@ export default function TaskPanel({
                   ) : (
                     /* Display Mode - enhanced preview with quick actions */
                     <div
-                      className={`px-3 py-1 border-b border-slate-50 cursor-pointer group transition-colors ${
+                      className={`px-3 py-0.5 border-b border-slate-50 cursor-pointer group transition-colors ${
                         selectedTaskId === task.id ? 'bg-indigo-50 border-l-2 border-l-indigo-400' : `hover:bg-slate-50 border-l-2 ${(() => { const tg = groups.find(g => g.id === (task.groupId || 'inbox')); return getGroupColor(tg).headerBorder; })()}`
                       }`}
                       onClick={() => handleTaskClick(task)}
@@ -778,7 +778,7 @@ export default function TaskPanel({
                       </div>
 
                       {/* Row 2: Group, Priority, Due Date */}
-                      <div className="flex items-center gap-2 mt-0.5 ml-6">
+                      <div className="flex items-center gap-1.5 mt-0.5 ml-6">
                         {/* Group Name */}
                         <span className="text-[10px] text-slate-400 font-medium truncate">
                           {getGroupName(task.groupId || 'inbox')}
@@ -824,6 +824,13 @@ export default function TaskPanel({
                           })}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Read-only notes preview - shown when task is selected but not in edit mode */}
+                  {selectedTaskId === task.id && editingTaskId !== task.id && task.notes && task.notes.trim() && (
+                    <div className="text-[11px] text-slate-500 px-3 py-1 bg-slate-50/50 border-b border-slate-100 line-clamp-3 overflow-hidden whitespace-pre-wrap">
+                      {task.notes}
                     </div>
                   )}
                 </div>

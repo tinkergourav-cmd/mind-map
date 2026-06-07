@@ -1,0 +1,22 @@
+{
+  "project_type": "React + Vite + Tailwind CSS single-page mind-map/task management app (ThoughtFlow)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite with npm",
+  "test_framework": "None (no test files exist)",
+  "build_command": "npm run build",
+  "test_command": "npm run build",
+  "verification_instructions": "Run `npm run build` and confirm the build succeeds without errors. The project has no unit tests, so a successful production build is the primary validation.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "No test framework installed. Validation is via successful vite build. No Docker setup.",
+  "contribution_requirements": "None documented. Standard React component patterns used throughout.",
+  "key_patterns": "Single-file components (TaskPanel.jsx, FullTaskManager.jsx). Tailwind CSS utility classes for all styling. lucide-react icons. State managed via useState/useMemo hooks. Tasks stored in App.jsx state with props passed down. GROUP_COLORS imported from taskConstants.js. Sidebar panel is 'w-80' width. FullTaskManager uses fixed inset-0 overlay. Both components share STATUS_OPTIONS, PRIORITY_OPTIONS, helper functions (duplicated in each file).",
+  "relevant_files": [
+    "src/TaskPanel.jsx",
+    "src/FullTaskManager.jsx",
+    "src/App.jsx",
+    "src/taskConstants.js",
+    "src/index.css"
+  ],
+  "directory_structure": "Root: package.json, vite.config.js, tailwind.config.js, postcss.config.js, index.html. src/: App.jsx (main 5900-line component), TaskPanel.jsx (sidebar, 838 lines), FullTaskManager.jsx (fullscreen, 708 lines), MiniMap.jsx, PinPanel.jsx, ReminderPanel.jsx, taskConstants.js, index.css, main.jsx."
+}
