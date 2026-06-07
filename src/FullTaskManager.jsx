@@ -19,6 +19,7 @@ import {
   Pencil,
   ChevronUp,
   PanelLeftClose,
+  Palette,
 } from 'lucide-react';
 import { GROUP_COLORS } from './taskConstants';
 
@@ -115,6 +116,7 @@ export default function FullTaskManager({
   const [newGroupName, setNewGroupName] = useState('');
   const [renamingGroupId, setRenamingGroupId] = useState(null);
   const [renameGroupValue, setRenameGroupValue] = useState('');
+  const [colorPickerGroupId, setColorPickerGroupId] = useState(null);
 
   if (!showPanel) return null;
 
@@ -441,17 +443,28 @@ export default function FullTaskManager({
 
                 {/* Group actions */}
                 <div className="flex items-center gap-1 ml-auto">
-                  {/* Color picker dots */}
-                  <div className="flex items-center gap-0.5">
-                    {GROUP_COLORS.map(c => (
-                      <button
-                        key={c.id}
-                        onClick={() => onUpdateGroupColor(group.id, c.id)}
-                        className={`w-3 h-3 rounded-full ${c.dotColor} ${group.color === c.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''} hover:scale-125 transition-transform`}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
+                  {/* Color picker toggle */}
+                  <button
+                    onClick={() => setColorPickerGroupId(colorPickerGroupId === group.id ? null : group.id)}
+                    className={`p-1 rounded transition-colors ${colorPickerGroupId === group.id ? 'bg-slate-200 text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+                    title="Edit Color"
+                  >
+                    <Palette className="w-3 h-3" />
+                  </button>
+
+                  {/* Color picker dots (shown on toggle) */}
+                  {colorPickerGroupId === group.id && (
+                    <div className="flex items-center gap-0.5">
+                      {GROUP_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => { onUpdateGroupColor(group.id, c.id); setColorPickerGroupId(null); }}
+                          className={`w-3 h-3 rounded-full ${c.dotColor} ${group.color === c.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''} hover:scale-125 transition-transform`}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  )}
 
                   {/* Rename */}
                   {renamingGroupId !== group.id && (
