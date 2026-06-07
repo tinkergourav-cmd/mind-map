@@ -189,7 +189,7 @@ export default function TaskPanel({
   };
 
   const handleTaskClick = (task) => {
-    setSelectedTaskId(task.id);
+    setSelectedTaskId(prev => prev === task.id ? null : task.id);
     setStatusDropdownTaskId(null);
   };
 
