@@ -334,6 +334,8 @@ const DEFAULT_REMINDERS = [
 ];
 
 const MARKDOWN_ZOOM_THRESHOLD = 0.6;
+const MAX_CARD_WIDTH = 600;
+const MAX_CARD_HEIGHT = 800;
 
 export default function WorkflowApp() {
   // --- Core State ---
@@ -516,8 +518,11 @@ export default function WorkflowApp() {
     if (newlineCount > 0) {
       width = Math.max(width, 220 + newlineCount * 20);
     }
-    width = Math.max(180, Math.min(380, width));
-    return { width };
+    width = Math.max(180, Math.min(MAX_CARD_WIDTH, width));
+    // Height grows with content but caps at MAX_CARD_HEIGHT
+    let height = 60 + Math.min(740, contentLen * 0.3 + newlineCount * 18);
+    height = Math.max(60, Math.min(MAX_CARD_HEIGHT, height));
+    return { width, height };
   }, []);
 
   // --- Zoom Helpers ---
@@ -4757,6 +4762,8 @@ export default function WorkflowApp() {
                     left: displayX, 
                     top: displayY, 
                     width: nodeDims.width,
+                    maxHeight: nodeDims.height,
+                    overflow: 'hidden',
                     backgroundColor: theme.cardBg || '#bfdbfe',
                     padding: 12,
                     ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
@@ -4858,7 +4865,7 @@ export default function WorkflowApp() {
 
                   {/* Content */}
                   {(node.content || editingTextNode === node.id) ? (
-                    <div className="mt-2 flex-1" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}>
+                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}>
                       {editingTextNode === node.id ? (
                         <textarea 
                           autoFocus
@@ -4871,7 +4878,8 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar break-words ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          style={{ maxHeight: nodeDims.height - 80, overflowWrap: 'break-word', wordBreak: 'break-word' }}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
