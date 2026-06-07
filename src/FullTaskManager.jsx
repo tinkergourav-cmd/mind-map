@@ -280,7 +280,7 @@ export default function FullTaskManager({
   const sortedGroups = [...groups].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
   return (
-    <div className={isPanel ? 'w-[480px] bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0 h-full' : 'fixed inset-0 z-50 bg-white flex flex-col'}>
+    <div className={isPanel ? 'w-1/2 bg-white border-l border-slate-200 flex flex-col overflow-hidden shrink-0 h-full' : 'fixed inset-0 z-50 bg-white flex flex-col'}>
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0 flex-wrap">
         <h2 className="text-sm font-bold text-slate-800 shrink-0">Task Manager</h2>
@@ -327,7 +327,7 @@ export default function FullTaskManager({
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="New group..."
-              className={`text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300 ${isPanel ? 'w-20' : 'w-28'}`}
+              className={`text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-300 w-28`}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateGroup(); }}
             />
             <button
