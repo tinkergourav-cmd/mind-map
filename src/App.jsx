@@ -5624,10 +5624,10 @@ export default function WorkflowApp() {
             selectedNode={cardEditorNode}
             onUpdateNode={(updates) => {
               if (cardEditorNode) {
-                takeSnapshot();
                 updateNode(cardEditorNode.id, updates);
               }
             }}
+            onSnapshot={() => takeSnapshot()}
             onClose={() => setShowCardEditorPanel(false)}
           />
         )}

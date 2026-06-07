@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Pencil, X } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 
-export default function CardEditorPanel({ selectedNode, onUpdateNode, onClose }) {
+export default function CardEditorPanel({ selectedNode, onUpdateNode, onSnapshot, onClose }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -14,7 +14,7 @@ export default function CardEditorPanel({ selectedNode, onUpdateNode, onClose })
       setTitle('');
       setContent('');
     }
-  }, [selectedNode?.id, selectedNode?.title, selectedNode?.content]);
+  }, [selectedNode?.id]);
 
   const handleTitleChange = (e) => {
     const newTitle = e.target.value;
@@ -61,6 +61,7 @@ export default function CardEditorPanel({ selectedNode, onUpdateNode, onClose })
               type="text"
               value={title}
               onChange={handleTitleChange}
+              onFocus={() => onSnapshot()}
               className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-300 focus:border-cyan-300"
               placeholder="Card title..."
             />
@@ -72,6 +73,7 @@ export default function CardEditorPanel({ selectedNode, onUpdateNode, onClose })
             <textarea
               value={content}
               onChange={handleContentChange}
+              onFocus={() => onSnapshot()}
               className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 placeholder-slate-400 resize-y focus:outline-none focus:ring-1 focus:ring-cyan-300 focus:border-cyan-300 min-h-[200px]"
               placeholder="Write content here... (supports markdown)"
               rows={10}
