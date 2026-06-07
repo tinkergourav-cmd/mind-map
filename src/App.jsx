@@ -3099,10 +3099,7 @@ export default function WorkflowApp() {
 
   const getTaskSection = (task) => {
     if (task.status === 'completed') return 'completed';
-    if (!task.dueDate) return 'noDueDate';
-    const today = new Date().toISOString().split('T')[0];
-    if (task.dueDate <= today) return 'today';
-    return 'upcoming';
+    return 'active';
   };
 
   const addTask = (taskData) => {
