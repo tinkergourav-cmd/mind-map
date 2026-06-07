@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create a CardEditorPanel side panel component and integrate it into App.jsx. The panel shows title and content editors for the currently selected card (when exactly one card is selected). It follows the same side panel pattern as PinPanel.jsx (w-80, border-l, bg-white). Changes in the panel immediately update the card on the canvas via updateNode.",
+  "status": "completed",
+  "steps": [
+    "Step 1: Create src/CardEditorPanel.jsx - a new side panel component.",
+    "Step 2: In src/App.jsx, add state: showCardEditorPanel.",
+    "Step 3: In src/App.jsx, add the import for CardEditorPanel.",
+    "Step 4: In src/App.jsx, compute cardEditorNode derived value.",
+    "Step 5: In src/App.jsx, render the CardEditorPanel in the JSX.",
+    "Step 6: In src/App.jsx, add a toggle button in the sidebar.",
+    "Step 7: Handle graceful transitions between selection states."
+  ],
+  "acceptance_criteria": [
+    "A new file src/CardEditorPanel.jsx exists with a functional React component",
+    "The panel is rendered in App.jsx and toggled via showCardEditorPanel state",
+    "When exactly one card is selected (selectedNodeIds has one entry), the panel shows title input and content textarea pre-filled with the card data",
+    "Editing title or content in the panel immediately calls updateNode and updates the card on canvas",
+    "When no card or multiple cards are selected, the panel shows an empty/informational state",
+    "A toggle button exists in the sidebar to open/close the panel",
+    "The panel includes a markdown preview below the content editor using MarkdownRenderer",
+    "npm run build completes without errors"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it completes with no errors",
+    "Verify src/CardEditorPanel.jsx exists and exports a default component",
+    "Grep for 'CardEditorPanel' in App.jsx to confirm it is imported and rendered"
+  ],
+  "blocked_reason": null,
+  "findings": "All steps completed successfully. Build passes. Panel created with title editor, content textarea (min-h-[200px]), and live markdown preview. Toggle button added to sidebar with cyan color scheme. Post-review fixes applied: (1) moved takeSnapshot from onUpdateNode to onFocus handlers matching canvas pattern, (2) changed useEffect deps to [selectedNode?.id] only so local state is authoritative during editing."
+}

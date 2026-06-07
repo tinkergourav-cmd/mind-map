@@ -15,6 +15,7 @@ import ReminderPanel from './ReminderPanel';
 import FullTaskManager from './FullTaskManager';
 import { GROUP_COLORS } from './taskConstants';
 import MarkdownRenderer from './MarkdownRenderer';
+import CardEditorPanel from './CardEditorPanel';
 
 // --- Premium Color Themes (10 colors) ---
 const THEMES = {
@@ -414,6 +415,7 @@ export default function WorkflowApp() {
   // --- Reminder & Wellness System States ---
   const [reminders, setReminders] = useState([]);
   const [showReminderPanel, setShowReminderPanel] = useState(false);
+  const [showCardEditorPanel, setShowCardEditorPanel] = useState(false);
   const [reminderNotificationQueue, setReminderNotificationQueue] = useState([]);
   const [sessionStartTime] = useState(Date.now());
   const reminderCheckIntervalRef = useRef(null);
@@ -1014,6 +1016,8 @@ export default function WorkflowApp() {
   const edges = activeWs?.edges || [];
   const groups = activeWs?.groups || [];
 
+  const cardEditorNode = (selectedNodeIds.length === 1) ? nodes.find(n => n.id === selectedNodeIds[0]) : null;
+
   const updateActiveWorkspace = useCallback((updater) => {
     setWorkspaces(prev => prev.map(ws => ws.id === activeTab ? { ...ws, ...updater(ws) } : ws));
   }, [activeTab]);
@@ -1422,6 +1426,20 @@ export default function WorkflowApp() {
     };
     window.addEventListener('keydown', handleReminderKey);
     return () => window.removeEventListener('keydown', handleReminderKey);
+  }, []);
+
+  // --- I key toggles card editor panel ---
+  useEffect(() => {
+    const handleCardEditorKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        setShowCardEditorPanel(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleCardEditorKey);
+    return () => window.removeEventListener('keydown', handleCardEditorKey);
   }, []);
 
   // --- T key toggles task panel (single press), TT (double-press) toggles fullscreen ---
@@ -4357,6 +4375,13 @@ export default function WorkflowApp() {
                 >
                   <Bell className="w-3.5 h-3.5" /> Reminders
                 </button>
+                <button
+                  onClick={() => setShowCardEditorPanel(!showCardEditorPanel)}
+                  title="Card Editor"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all mt-1.5 w-full ${showCardEditorPanel ? 'bg-cyan-100 text-cyan-700 border border-cyan-300' : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Card Editor
+                </button>
               </div>
             </div>
 
@@ -5604,6 +5629,20 @@ export default function WorkflowApp() {
             }}
             onEnableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: true, nextReminderAt: Date.now() + r.frequency * 60000 }))); }}
             onDisableAll={() => { setReminders(prev => prev.map(r => ({ ...r, enabled: false, nextReminderAt: null }))); }}
+          />
+        )}
+
+        {/* --- Card Editor Panel --- */}
+        {showCardEditorPanel && viewMode === 'canvas' && (
+          <CardEditorPanel
+            selectedNode={cardEditorNode}
+            onUpdateNode={(updates) => {
+              if (cardEditorNode) {
+                updateNode(cardEditorNode.id, updates);
+              }
+            }}
+            onSnapshot={() => takeSnapshot()}
+            onClose={() => setShowCardEditorPanel(false)}
           />
         )}
 

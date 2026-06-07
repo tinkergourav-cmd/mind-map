@@ -1,0 +1,14 @@
+{
+  "task_id": "task-card-editor-panel",
+  "task_description": "Add a dedicated side panel that acts as a Card Content Editor + Previewer. When exactly one card is selected on the canvas, the panel shows the card title and content for comfortable editing with a markdown preview. When no card or multiple cards are selected, the panel shows an empty state. Changes made in the panel immediately update the selected card on the canvas.",
+  "status": "completed",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "skipped",
+    "docker_build": "skipped",
+    "summary": "npm run build passes successfully. No test framework in the project. New CardEditorPanel component created and integrated into App.jsx. All acceptance criteria verified via code inspection."
+  }
+}

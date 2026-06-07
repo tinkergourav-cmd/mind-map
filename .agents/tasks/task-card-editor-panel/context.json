@@ -1,0 +1,21 @@
+{
+  "project_type": "React + Vite SPA (mind-map/canvas app)",
+  "language": "JavaScript (JSX)",
+  "build_system": "Vite 6 with Tailwind CSS 3",
+  "test_framework": "None (no test files present)",
+  "build_command": "npm run build",
+  "test_command": "npm run build",
+  "verification_instructions": "Run `npm run build` to verify no compilation errors. Visual verification of side panel behavior.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cd /projects/sandbox/mind-map && npm install",
+  "environment_constraints": "No test framework. Verification is build-only.",
+  "contribution_requirements": "Follow existing code patterns - Tailwind CSS for styling, lucide-react for icons, side panels use w-80 width with border-l border-slate-200.",
+  "key_patterns": "Side panels (PinPanel, ReminderPanel, FullTaskManager) are rendered inside the 'flex-1 flex overflow-hidden' container after the main canvas. They use w-80 fixed width, bg-white, border-l border-slate-200, flex flex-col, overflow-hidden, shrink-0. Panel visibility is controlled by boolean state (e.g. showPinPanel). Nodes have {id, title, content, theme, x, y, groupId, cloneSourceId}. Node updates use updateNode(id, {title, content}). Selection state: selectedNodeIds (array) for multi-select, focusedNodeId for single focus. The updateNode function handles clone propagation. MarkdownRenderer component is already available for preview. Toggle buttons in sidebar use consistent pattern with colored active states.",
+  "relevant_files": [
+    "src/App.jsx - main component, contains all state, updateNode, selectedNodeIds, panel rendering",
+    "src/PinPanel.jsx - reference for side panel structure and styling",
+    "src/MarkdownRenderer.jsx - reusable markdown preview component to use in the new panel",
+    "src/ReminderPanel.jsx - another reference for side panel patterns"
+  ],
+  "directory_structure": "src/ contains all source files. App.jsx is the monolithic main component (~5900 lines). Side panels are separate files (PinPanel.jsx, ReminderPanel.jsx, FullTaskManager.jsx). Styles in index.css with Tailwind."
+}
