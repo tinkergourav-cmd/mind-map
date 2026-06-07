@@ -14,7 +14,39 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* Card scroll area - thin subtle scrollbar */
+.card-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.card-scroll-area:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.card-scroll-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.card-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-scroll-area::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 2px;
+}
+
+.card-scroll-area:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+}
+
 /* Markdown content styles for card rendering */
+.markdown-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 .markdown-content ul {
   margin-left: 0;
 }

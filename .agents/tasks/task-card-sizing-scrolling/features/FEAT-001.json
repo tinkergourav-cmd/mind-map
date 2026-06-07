@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Implement card maximum dimensions, internal scrolling, stable sizing during edit transitions, Shift+Wheel card scrolling, zoom-out dimension stability, and optional resize handle",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Add card dimension constants: In src/App.jsx, near the existing MARKDOWN_ZOOM_THRESHOLD constant (around line 320), add constants for maximum card dimensions. Use values roughly proportional to an A4 page: MAX_CARD_WIDTH = 480 (pixels), MAX_CARD_HEIGHT = 600 (pixels), MIN_CARD_WIDTH = 180, MIN_CARD_HEIGHT = 80.",
+    "Step 2 - Refactor getNodeDimensions to also compute height: Modify the `getNodeDimensions` function (lines 506-520 of App.jsx) to compute both width and height based on content. The width calculation should stay as-is (180-380 range based on content length). Add a height calculation: estimate based on content lines (each line ~18px for text + padding). Use min-height of MIN_CARD_HEIGHT and cap at MAX_CARD_HEIGHT. Return { width, height, hasOverflow } where hasOverflow is true when natural content height exceeds MAX_CARD_HEIGHT. Also respect node.customWidth and node.customHeight if they are set (for the resize handle feature).",
+    "Step 3 - Apply max dimensions and overflow to card container: In the node rendering section (around line 4760 of App.jsx), update the card's outer div style to include: maxWidth: MAX_CARD_WIDTH, maxHeight: node.customHeight || MAX_CARD_HEIGHT (only apply maxHeight when not in editing mode for that specific card). Add overflow: 'hidden' to the outer card container. For the content area (the div wrapping MarkdownRenderer and the edit textarea), add overflow-y: auto and a calculated max-height that accounts for the title section height (approximately maxHeight - 60px for title/padding).",
+    "Step 4 - Stable dimensions during edit mode transitions: When editingTextNode changes to a node's id, the card should NOT resize. Ensure the card container uses the same fixed dimensions (width from getNodeDimensions, height capped at MAX_CARD_HEIGHT) in both display and edit modes. The textarea in edit mode should fill the available content area (flex-1 with overflow-y: auto) rather than growing the card. Set minHeight on the content wrapper to preserve the pre-edit height.",
+    "Step 5 - Implement Shift+Wheel scrolling for card content: Modify the handleWheel function (line 531 of App.jsx). When e.shiftKey is true AND the mouse is over a card with overflow content, the event should NOT zoom the canvas. Instead, allow the default browser scroll behavior on the card's scrollable content area. Implementation: (a) In handleWheel, check if e.shiftKey is true. If so, check if the event target is inside a card content area (has class 'card-scroll-area' or similar). If it is, return early (do not preventDefault, do not zoom). (b) Add a CSS class 'card-scroll-area' to the content div that wraps MarkdownRenderer. (c) Add a data attribute or class to detect overflow state.",
+    "Step 6 - Zoom-out dimension stability: When the zoom level drops below MARKDOWN_ZOOM_THRESHOLD (0.6), the card should NOT change its width/height dimensions. It already switches to a lightweight preview via MarkdownRenderer, but the card container dimensions must remain stable. Ensure getNodeDimensions does not factor in zoom level. The card outer div style should always use the same width regardless of transform.scale. The overflow: hidden on the card container will automatically clip content that would exceed boundaries when zoomed out.",
+    "Step 7 - Add custom-scrollbar CSS styles: In src/index.css, add styles for the .card-scroll-area class (or .custom-scrollbar if reusing that name): thin scrollbar, subtle colors, only visible on hover. Use WebKit scrollbar pseudo-elements for styling. Also add word-wrap: break-word / overflow-wrap: break-word to .markdown-content to ensure long lines wrap rather than causing horizontal scroll.",
+    "Step 8 - Optional resize handle: Add a resize drag handle (small triangle/grip icon) at the bottom-right corner of each card. When dragged, it updates the card's customWidth and customHeight properties (persisted in the node data model via updateNode). The resized dimensions become the new constraints for that card. The content area continues to use internal scrolling when content exceeds the custom size. Implementation: (a) Add a small div at the bottom-right of each card with cursor: se-resize. (b) On pointerdown, start tracking resize. (c) On pointermove, compute new width/height (clamped between MIN_CARD_WIDTH/MIN_CARD_HEIGHT and MAX_CARD_WIDTH/MAX_CARD_HEIGHT). (d) On pointerup, call updateNode with { customWidth, customHeight }. (e) Use node.customWidth/node.customHeight in getNodeDimensions if set."
+  ],
+  "acceptance_criteria": [
+    "Small cards (short title, little content) remain compact - no forced minimum size larger than needed",
+    "Cards with large content stop growing at MAX_CARD_HEIGHT (600px) and MAX_CARD_WIDTH (480px)",
+    "Content exceeding card max height is accessible via internal scroll within the card content area",
+    "Card dimensions do not change when toggling between edit and display modes",
+    "Shift+Mouse Wheel scrolls card content when hovering over an overflowing card instead of zooming the canvas",
+    "Normal Mouse Wheel continues to zoom the canvas as before",
+    "Card dimensions remain stable when zooming in/out - no resizing based on zoom level",
+    "Long text lines wrap within the card width - no horizontal scrolling",
+    "Resize handle at bottom-right corner allows manual card resizing",
+    "Manual resize dimensions are persisted and respected",
+    "npm run build passes without errors"
+  ],
+  "verification": [
+    "Run `npm run build` and confirm it completes without errors",
+    "Visually inspect the built code logic to confirm max dimensions are applied to card containers",
+    "Confirm the handleWheel function has the Shift+key check for card scrolling bypass"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

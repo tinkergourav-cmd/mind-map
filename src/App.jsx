@@ -335,6 +335,12 @@ const DEFAULT_REMINDERS = [
 
 const MARKDOWN_ZOOM_THRESHOLD = 0.6;
 
+// Card dimension constraints
+const MAX_CARD_WIDTH = 480;
+const MAX_CARD_HEIGHT = 600;
+const MIN_CARD_WIDTH = 180;
+const MIN_CARD_HEIGHT = 80;
+
 export default function WorkflowApp() {
   // --- Core State ---
   const [workspaces, setWorkspaces] = useState([]);
@@ -353,6 +359,7 @@ export default function WorkflowApp() {
   const [draggingGroup, setDraggingGroup] = useState(null);
   const [draggingImage, setDraggingImage] = useState(null);
   const [resizingGroup, setResizingGroup] = useState(null);
+  const [resizingNode, setResizingNode] = useState(null);
   const [dragHoveredGroupId, setDragHoveredGroupId] = useState(null);
 
   const [connecting, setConnecting] = useState(null);
@@ -516,8 +523,23 @@ export default function WorkflowApp() {
     if (newlineCount > 0) {
       width = Math.max(width, 220 + newlineCount * 20);
     }
-    width = Math.max(180, Math.min(380, width));
-    return { width };
+    width = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, width));
+
+    // Estimate height based on content lines
+    const lines = newlineCount + 1;
+    const estimatedContentHeight = lines * 18 + 40; // 18px per line + padding
+    let height = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, estimatedContentHeight));
+    const hasOverflow = estimatedContentHeight > MAX_CARD_HEIGHT;
+
+    // Respect custom dimensions if user has resized
+    if (node.customWidth) {
+      width = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, node.customWidth));
+    }
+    if (node.customHeight) {
+      height = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, node.customHeight));
+    }
+
+    return { width, height, hasOverflow: hasOverflow || (node.customHeight && estimatedContentHeight > node.customHeight) };
   }, []);
 
   // --- Zoom Helpers ---
@@ -529,6 +551,14 @@ export default function WorkflowApp() {
   }, []);
 
   const handleWheel = useCallback((e) => {
+    // Shift+Wheel: allow internal card scrolling instead of canvas zoom
+    if (e.shiftKey) {
+      const cardScrollArea = e.target.closest('.card-scroll-area');
+      if (cardScrollArea) {
+        // Don't prevent default - let the browser scroll the card content
+        return;
+      }
+    }
     e.preventDefault();
     setEditingPinOnCanvas(null);
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
@@ -2680,6 +2710,12 @@ export default function WorkflowApp() {
           groups: computeLayout(updatedGroups, ws.nodes)
         };
       });
+    } else if (resizingNode) {
+      const dx = (e.clientX - resizingNode.startX) / transform.scale;
+      const dy = (e.clientY - resizingNode.startY) / transform.scale;
+      const newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, resizingNode.initialWidth + dx));
+      const newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, resizingNode.initialHeight + dy));
+      setResizingNode(prev => ({ ...prev, currentWidth: newWidth, currentHeight: newHeight }));
     } else if (connecting) {
       const coords = getWorkspaceCoords(e);
       setConnecting(prev => ({ ...prev, currentX: coords.x, currentY: coords.y }));
@@ -2700,7 +2736,7 @@ export default function WorkflowApp() {
         currentY: draggingPin.initialY + dy
       }));
     }
-  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, resizingNode, isPanning, panStart, transform.scale, getWorkspaceCoords, getSpatiallyHoveredGroup, getSpatiallyHoveredGroupForGroup, updateActiveWorkspace, isMultiSelecting, selectionBox, nodes, getNodeDimensions]);
 
 
   const handlePointerUp = useCallback(() => {
@@ -2829,6 +2865,16 @@ export default function WorkflowApp() {
       }
     }
 
+    if (resizingNode) {
+      updateNode(resizingNode.id, { customWidth: resizingNode.currentWidth, customHeight: resizingNode.currentHeight });
+      if (dragSnapshot.current) {
+        const snapshotToSave = dragSnapshot.current;
+        const newPast = [...pastRef.current, snapshotToSave];
+        updateHistory(newPast, []);
+      }
+      setResizingNode(null);
+    }
+
     if (draggingImage) {
       if (draggingImage.currentX !== draggingImage.initialX || draggingImage.currentY !== draggingImage.initialY) {
         updateActiveWorkspace(ws => {
@@ -2885,6 +2931,7 @@ export default function WorkflowApp() {
     draggingNodeRef.current = null;
     setDraggingGroup(null);
     setResizingGroup(null);
+    setResizingNode(null);
     setDragHoveredGroupId(null);
     setConnecting(null);
     setConnectHoverNodeId(null);
@@ -2892,7 +2939,7 @@ export default function WorkflowApp() {
     setDraggingImage(null);
     setDraggingPin(null);
     dragSnapshot.current = null;
-  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
+  }, [draggingNode, draggingGroup, draggingImage, draggingPin, resizingNode, resizingGroup, dragHoveredGroupId, updateActiveWorkspace, updateHistory, isMultiSelecting, getNodeDimensions]);
 
 
   // --- Node, Edge, and Group Creators ---
@@ -4736,6 +4783,9 @@ export default function WorkflowApp() {
               const theme = THEMES[node.theme] || THEMES.blue;
               const isDragging = draggingNode?.id === node.id;
               const nodeDims = getNodeDimensions(node);
+              const isResizing = resizingNode?.id === node.id;
+              const cardWidth = isResizing ? resizingNode.currentWidth : nodeDims.width;
+              const cardHeight = isResizing ? resizingNode.currentHeight : nodeDims.height;
               
               const coords = getLiveCoordinates(node, false);
               const displayX = coords.x;
@@ -4756,7 +4806,11 @@ export default function WorkflowApp() {
                   style={{ 
                     left: displayX, 
                     top: displayY, 
-                    width: nodeDims.width,
+                    width: cardWidth,
+                    maxWidth: MAX_CARD_WIDTH,
+                    height: cardHeight,
+                    maxHeight: MAX_CARD_HEIGHT,
+                    overflow: 'hidden',
                     backgroundColor: theme.cardBg || '#bfdbfe',
                     padding: 12,
                     ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
@@ -4858,12 +4912,13 @@ export default function WorkflowApp() {
 
                   {/* Content */}
                   {(node.content || editingTextNode === node.id) ? (
-                    <div className="mt-2 flex-1" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }}>
+                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }} style={{ maxHeight: cardHeight - 60 }}>
                       {editingTextNode === node.id ? (
                         <textarea 
                           autoFocus
                           onBlur={() => setEditingTextNode(null)}
-                          className="w-full h-full min-h-[2rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 custom-scrollbar" 
+                          className="w-full h-full min-h-[2rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 card-scroll-area" 
+                          style={{ maxHeight: cardHeight - 60, overflowY: 'auto' }}
                           value={node.content || ''} 
                           onChange={(e) => updateNode(node.id, { content: e.target.value })} 
                           placeholder="Write notes or details..." 
@@ -4871,7 +4926,8 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed custom-scrollbar ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed card-scroll-area ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          style={{ maxHeight: cardHeight - 60 }}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
@@ -4906,6 +4962,30 @@ export default function WorkflowApp() {
                       <Copy className="w-3 h-3 text-violet-400" />
                     </div>
                   )}
+
+                  {/* Resize handle */}
+                  <div
+                    className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 group-hover:opacity-60 transition-opacity z-40"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      dragSnapshot.current = JSON.parse(JSON.stringify(stateRef.current));
+                      setResizingNode({
+                        id: node.id,
+                        startX: e.clientX,
+                        startY: e.clientY,
+                        initialWidth: cardWidth,
+                        initialHeight: cardHeight,
+                        currentWidth: cardWidth,
+                        currentHeight: cardHeight
+                      });
+                    }}
+                    title="Drag to resize"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" className="text-slate-500">
+                      <path d="M14 14L8 14M14 14L14 8M14 14L6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                    </svg>
+                  </div>
 
                   {/* Hover toolbar */}
                   <div className="absolute -top-8 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-md shadow border border-slate-200 px-1 py-0.5" onPointerDown={(e) => e.stopPropagation()}>
