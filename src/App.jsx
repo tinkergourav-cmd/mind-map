@@ -560,11 +560,12 @@ export default function WorkflowApp() {
   }, []);
 
   const handleWheel = useCallback((e) => {
-    // Shift+Wheel: allow internal card scrolling instead of canvas zoom
+    // Shift+Wheel: programmatically scroll card content instead of zooming canvas
     if (e.shiftKey) {
       const cardScrollArea = e.target.closest('.card-scroll-area');
       if (cardScrollArea) {
-        // Don't prevent default - let the browser scroll the card content
+        e.preventDefault();
+        cardScrollArea.scrollTop += (e.deltaY || e.deltaX);
         return;
       }
     }
@@ -4928,13 +4929,13 @@ export default function WorkflowApp() {
 
                   {/* Content */}
                   {(node.content || editingTextNode === node.id) ? (
-                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }} style={{ maxHeight: cardHeight - 80 }}>
+                    <div className="mt-2 flex-1 overflow-hidden" onPointerDown={(e) => { if (editMode) e.stopPropagation(); }} style={{ maxHeight: cardHeight - 80 - (node.linkToTab ? 32 : 0) }}>
                       {editingTextNode === node.id ? (
                         <textarea 
                           autoFocus
                           onBlur={() => setEditingTextNode(null)}
                           className="w-full h-full min-h-[2rem] bg-transparent resize-none focus:outline-none text-slate-600 text-xs leading-relaxed placeholder-slate-400 card-scroll-area" 
-                          style={{ maxHeight: cardHeight - 80, overflowY: 'auto' }}
+                          style={{ maxHeight: cardHeight - 80 - (node.linkToTab ? 32 : 0), overflowY: 'auto' }}
                           value={node.content || ''} 
                           onChange={(e) => updateNode(node.id, { content: e.target.value })} 
                           placeholder="Write notes or details..." 
@@ -4943,7 +4944,7 @@ export default function WorkflowApp() {
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
                           className={`w-full bg-transparent overflow-y-auto text-slate-600 text-xs leading-relaxed card-scroll-area ${editMode ? 'cursor-text' : 'cursor-default'}`}
-                          style={{ maxHeight: cardHeight - 80 }}
+                          style={{ maxHeight: cardHeight - 80 - (node.linkToTab ? 32 : 0) }}
                           title="Click to edit content"
                         >
                           <MarkdownRenderer content={node.content} isZoomedIn={transform.scale >= MARKDOWN_ZOOM_THRESHOLD} />
