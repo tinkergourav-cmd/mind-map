@@ -535,6 +535,7 @@ export default function WorkflowApp() {
 
   const handleWheel = useCallback((e) => {
     e.preventDefault();
+    if (e.shiftKey) return;
     setEditingPinOnCanvas(null);
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setTransform(prev => {
