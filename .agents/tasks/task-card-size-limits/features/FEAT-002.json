@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Fix card content clipping for short/medium content. Cards should auto-size naturally without maxHeight/overflow-hidden until they actually reach MAX_CARD_HEIGHT.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1: In the outer card container style (around line 4763-4766 in src/App.jsx), only apply maxHeight and overflow:hidden when nodeDims.height >= MAX_CARD_HEIGHT. For smaller cards, omit maxHeight entirely and let the card auto-size.",
+    "Step 2: In the content div (around line 4880-4882 in src/App.jsx), when nodeDims.height < MAX_CARD_HEIGHT, do NOT use overflow-hidden. Use overflow-visible or remove overflow restriction so content is fully visible.",
+    "Step 3: Verify npm run build succeeds."
+  ],
+  "acceptance_criteria": [
+    "Short descriptions are fully visible without clipping",
+    "Cards auto-size naturally for small/medium content",
+    "Cards that exceed MAX_CARD_HEIGHT still cap height and enable scrolling",
+    "npm run build succeeds without errors"
+  ],
+  "verification": [
+    "Run 'npm run build' and confirm it succeeds without errors",
+    "Verify that the outer card container only applies maxHeight when height >= MAX_CARD_HEIGHT",
+    "Verify that the content div does not use overflow-hidden for non-max cards"
+  ],
+  "blocked_reason": null,
+  "findings": null
+}

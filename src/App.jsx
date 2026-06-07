@@ -4762,8 +4762,7 @@ export default function WorkflowApp() {
                     left: displayX, 
                     top: displayY, 
                     width: nodeDims.width,
-                    maxHeight: nodeDims.height,
-                    overflow: 'hidden',
+                    ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height, overflow: 'hidden' } : {}),
                     backgroundColor: theme.cardBg || '#bfdbfe',
                     padding: 12,
                     ...(selectedNodeIds.includes(node.id) ? { borderColor: theme.border || '#3b82f6' } : {}),
@@ -4878,7 +4877,7 @@ export default function WorkflowApp() {
                       ) : (
                         <div 
                           onClick={() => { if (editMode) { takeSnapshot(); setEditingTextNode(node.id); } }}
-                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words ${nodeDims.height >= MAX_CARD_HEIGHT ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'} ${editMode ? 'cursor-text' : 'cursor-default'}`}
+                          className={`w-full bg-transparent text-slate-600 text-xs leading-relaxed break-words ${nodeDims.height >= MAX_CARD_HEIGHT ? 'overflow-y-auto custom-scrollbar' : ''} ${editMode ? 'cursor-text' : 'cursor-default'}`}
                           style={{ ...(nodeDims.height >= MAX_CARD_HEIGHT ? { maxHeight: nodeDims.height - 80 } : {}), overflowWrap: 'break-word', wordBreak: 'break-word' }}
                           title="Click to edit content"
                         >
